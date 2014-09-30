@@ -1,0 +1,2218 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\begin_modules
+theorems-ams-bytype
+\end_modules
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Lab 1 - Redwood Data
+\begin_inset Newline newline
+\end_inset
+
+Stat 215A, Fall 2014
+\end_layout
+
+\begin_layout Author
+Hoang Duong
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+A group of scientists are interested in learning the living environment
+ of redwood trees in California forest.
+ They attached wireless sensor at multiple places into two redwood trees
+ to record the temperature, humidity, Incident PAR, and Refrected PAR.
+ They ran the sensors for more than a month during the summer, each sensor
+ is supposed to record an observation every five minutes.
+ 
+\end_layout
+
+\begin_layout Standard
+We will attempt to clean and explore the data.
+\end_layout
+
+\begin_layout Section
+The Data
+\end_layout
+
+\begin_layout Subsection
+Data Collection
+\end_layout
+
+\begin_layout Standard
+The data records measurement from four sensors attached to multiple places
+ (identified by nodeid) in two redwood trees from 5:10pm April 27th, 2004
+ to June 10th, 2004.
+ Data is sampled every 5 minutes, as such we expect to have 12635 observations
+ during this period for each nodeid.
+ 
+\end_layout
+
+\begin_layout Standard
+The first sensor measures the temperature (denoted humid_temp in the dataset).
+ The second sensor measures the humidity.
+ The third sensor measures Incident Photosynthetically Active Radiation
+ (denoted hamatop in the dataset), which roughly means the amount of direct
+ sunlight that can be converted to energy by tree.
+ The fourth sensor measures Reflected Photosynthetically Active Radiation
+ (denoted hamabot in the dataset).
+ This is slightly different from Incident PAR, as it measures the sunlight
+ reflected, not the direct sunlight.
+ We expect this number to be smaller than Incident PAR on average.
+ Also we expect the number to be zero at night.
+\end_layout
+
+\begin_layout Standard
+We have four different dataset, called 
+\begin_inset Quotes eld
+\end_inset
+
+log
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+net
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+all
+\begin_inset Quotes erd
+\end_inset
+
+, and 
+\begin_inset Quotes eld
+\end_inset
+
+locs
+\begin_inset Quotes erd
+\end_inset
+
+.
+ We notice that dataset 
+\begin_inset Quotes eld
+\end_inset
+
+all
+\begin_inset Quotes erd
+\end_inset
+
+ is exactly equal to the concatenation of dataset 
+\begin_inset Quotes eld
+\end_inset
+
+log
+\begin_inset Quotes erd
+\end_inset
+
+ and 
+\begin_inset Quotes eld
+\end_inset
+
+net
+\begin_inset Quotes erd
+\end_inset
+
+, as the total number of rows match.
+ Also the top rows of 
+\begin_inset Quotes eld
+\end_inset
+
+all
+\begin_inset Quotes erd
+\end_inset
+
+ is exactly as the top rows of net, and the rows after the length of net
+ is exactly the rows of log.
+ As such we can focus on the two dataset 
+\begin_inset Quotes eld
+\end_inset
+
+log
+\begin_inset Quotes erd
+\end_inset
+
+ and 
+\begin_inset Quotes eld
+\end_inset
+
+net
+\begin_inset Quotes erd
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+Dataset 
+\begin_inset Quotes eld
+\end_inset
+
+log
+\begin_inset Quotes erd
+\end_inset
+
+ has around 300,000 observations.
+ It seems this dataset is aggregated after bringing sensors from the tree
+ back to the lab.
+ The data are sorted by nodeid.
+ Also the timestamp all points to a time 6 months after the data collection
+ time (in November 2004).
+ 
+\end_layout
+
+\begin_layout Standard
+Dataset 
+\begin_inset Quotes eld
+\end_inset
+
+net
+\begin_inset Quotes erd
+\end_inset
+
+ has around 100,000 observations.
+ This data is sorted by time.
+ This is the data received wirelessly from the sensors during the collection
+ period.
+ This data starts 10 days after the supposed start data, and ends around
+ 10 days before.
+ We think what happens is that at the beginning and the end, the sensors
+ were not able to send the data wirelessly, but it still keeps all record
+ in its memory.
+ So researchers were able to aggregate them into the 
+\begin_inset Quotes eld
+\end_inset
+
+log
+\begin_inset Quotes erd
+\end_inset
+
+ dataset.
+\end_layout
+
+\begin_layout Subsection
+Data Cleaning
+\end_layout
+
+\begin_layout Subsubsection
+Removing Uninformative Columns
+\end_layout
+
+\begin_layout Standard
+From the lab, we can ignore columns: 
+\begin_inset Quotes eld
+\end_inset
+
+parent
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+depth
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+humid_adj
+\begin_inset Quotes erd
+\end_inset
+
+.
+ For the 
+\begin_inset Quotes eld
+\end_inset
+
+log
+\begin_inset Quotes erd
+\end_inset
+
+ data, we note that variable 
+\begin_inset Quotes eld
+\end_inset
+
+result_time
+\begin_inset Quotes erd
+\end_inset
+
+ takes only one value, which is after the date of the experiment.
+ We will remove this uninformative column.
+ For the 
+\begin_inset Quotes eld
+\end_inset
+
+net
+\begin_inset Quotes erd
+\end_inset
+
+ data, we note the voltage column is always around 200 to 300 Voltage.
+ This is not measuring the voltage of battery, as it should be around 2
+ to 3 Voltage.
+ We suspect this is the voltage of the machine at the lab, not of the sensor
+ in the tree, as 
+\begin_inset Quotes eld
+\end_inset
+
+net
+\begin_inset Quotes erd
+\end_inset
+
+ is the aggregated data received wirelessly at the lab from all nodes.
+ 
+\end_layout
+
+\begin_layout Standard
+In conclusion, we remove 4 columns from each dataset 
+\begin_inset Quotes eld
+\end_inset
+
+log
+\begin_inset Quotes erd
+\end_inset
+
+, and 
+\begin_inset Quotes eld
+\end_inset
+
+net
+\begin_inset Quotes erd
+\end_inset
+
+.
+ We will call the four columns humidity, humid_temp, hamatop, and hamabot
+ the value column.
+ We call the remaining column the identity columns.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Handling Missing Value (NA)
+\end_layout
+
+\begin_layout Standard
+For the 
+\begin_inset Quotes eld
+\end_inset
+
+log
+\begin_inset Quotes erd
+\end_inset
+
+ dataset, we note that each row either has no NA, or has four of them.
+ 
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+> table(rowSums(is.na(log)))
+\end_layout
+
+\begin_layout Plain Layout
+
+0        4
+\end_layout
+
+\begin_layout Plain Layout
+
+292786   8270 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Looking into what columns have NA, we find that the four columns are the
+ four value columns 
+\begin_inset Quotes eld
+\end_inset
+
+humidity
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+humid_temp
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+hamatop
+\begin_inset Quotes erd
+\end_inset
+
+, and 
+\begin_inset Quotes eld
+\end_inset
+
+hamabot
+\begin_inset Quotes erd
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+> colSums(is.na(log))
+\end_layout
+
+\begin_layout Plain Layout
+
+epoch     nodeid    voltage   humidity humid_temp    hamatop    hamabot
+           0          0          0       8270       8270       8270    
+   8270 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+So whenever there is an NA, all four sensors are not working.
+ We can safely remove all columns with NA.
+ 
+\end_layout
+
+\begin_layout Standard
+This pattern happens for 
+\begin_inset Quotes eld
+\end_inset
+
+net
+\begin_inset Quotes erd
+\end_inset
+
+ data as well.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Remove Errornous Data
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Quotes eld
+\end_inset
+
+Epoch
+\begin_inset Quotes erd
+\end_inset
+
+ column - According to the paper, our data spans from April 27th 2004, 5:10pm
+ to June 10th 2:00pm.
+ With a sample interval of 5 minutes, we expect to see 12635 observation,
+ and the 
+\begin_inset Quotes eld
+\end_inset
+
+epoch
+\begin_inset Quotes erd
+\end_inset
+
+ should be from 1 to 12635.
+ Looking at the density plot of 
+\begin_inset Quotes eld
+\end_inset
+
+epoch
+\begin_inset Quotes erd
+\end_inset
+
+ for both 
+\begin_inset Quotes eld
+\end_inset
+
+net
+\begin_inset Quotes erd
+\end_inset
+
+, we see no violation.
+ 
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Quotes eld
+\end_inset
+
+NodeID
+\begin_inset Quotes erd
+\end_inset
+
+ column - From the 
+\begin_inset Quotes eld
+\end_inset
+
+locs
+\begin_inset Quotes erd
+\end_inset
+
+ data, we see that the 
+\begin_inset Quotes eld
+\end_inset
+
+nodeid
+\begin_inset Quotes erd
+\end_inset
+
+ should be an integer between 1 and 200.
+ We see one observation on dataset 
+\begin_inset Quotes eld
+\end_inset
+
+log
+\begin_inset Quotes erd
+\end_inset
+
+ where 
+\begin_inset Quotes eld
+\end_inset
+
+nodeid
+\begin_inset Quotes erd
+\end_inset
+
+ is 65535.
+ Looking at that specific observation, we see errornous data (humidity is
+ -9375).
+ We delete this observation.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Quotes eld
+\end_inset
+
+Voltage
+\begin_inset Quotes erd
+\end_inset
+
+ column - The 
+\begin_inset Quotes eld
+\end_inset
+
+voltage
+\begin_inset Quotes erd
+\end_inset
+
+ column is only available for the net data.
+ According to the paper, 
+\begin_inset Quotes eld
+\end_inset
+
+voltage
+\begin_inset Quotes erd
+\end_inset
+
+ is initially at 3V, and if it drops below 2.4V, the observation is not reliable
+ anymore.
+ We find the data to not exactly follow that claim.
+ 
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Looking at the densityplot of voltage in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "voltage_density"
+
+\end_inset
+
+, we notice most of the observations lie in the normal range from 2.4V to
+ 3V.
+ However there is a peak at around 0.5V.
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Box Doublebox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "90col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename data/voltage_dist.png
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Voltage Density Plot
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "voltage_density"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+Looking into detail, we find that there are 28,555 observations where the
+ voltage is exactly 0.580567.
+ (out of 110,718 observations in net).
+ We find that this problem is exclusive to 7 nodes: 128, 134, 135, 141,
+ 142, 143, 145, which have all observations having voltage of the above
+ 0.580567.
+ We compare the 
+\begin_inset Quotes eld
+\end_inset
+
+humid_temp
+\begin_inset Quotes erd
+\end_inset
+
+ and 
+\begin_inset Quotes eld
+\end_inset
+
+humidity
+\begin_inset Quotes erd
+\end_inset
+
+ columns of these observation with wrong voltage, with those with normal
+ voltage, and see nothing wrong with these wrong-voltage observations.
+ As such we keep them.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Now we investigate those observations where the voltage is below 2.4V, but
+ is not 0.580567.
+ There are 740 of them.
+ 
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Box Doublebox
+position "c"
+hor_pos "c"
+has_inner_box 1
+inner_pos "c"
+use_parbox 0
+use_makebox 0
+width "90col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename data/low_voltage.png
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Investigating Low Voltage Observations
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "low_voltage"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+Judging from the plots in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "low_voltage"
+
+\end_inset
+
+, those observations with voltage below 2.00 are errornous, while those above
+ 2.00 seem to be fine.
+ 
+\begin_inset Newline newline
+\end_inset
+
+Conclusion: We remove those observations in 
+\begin_inset Quotes eld
+\end_inset
+
+net
+\begin_inset Quotes erd
+\end_inset
+
+ that has voltage below 2.00 but above 1.00.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+\begin_inset Quotes eld
+\end_inset
+
+Humidity
+\begin_inset Quotes erd
+\end_inset
+
+ and 
+\begin_inset Quotes eld
+\end_inset
+
+humid_temp
+\begin_inset Quotes erd
+\end_inset
+
+ column - Humidity is a measure that should be between 0 and 100.
+ There is one observation where humidity is below 0, and it looks obviously
+ wrong.
+ We will remove it.
+ 
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Quotes eld
+\end_inset
+
+log
+\begin_inset Quotes erd
+\end_inset
+
+ data has histogram of temperature seem right, while 
+\begin_inset Quotes eld
+\end_inset
+
+net
+\begin_inset Quotes erd
+\end_inset
+
+ data has temperature as high as 120 Celcius degree.
+ We will investigate this problem.
+ 
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Box Doublebox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "90col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename data/wrong_temp.png
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Investigating NodeID's with wrong temperature
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "wrong_temp"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+Looking at Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "wrong_temp"
+
+\end_inset
+
+ of those nodeid's with wrong temperature data, we see that there seems
+ to be a problem with battery, where the sensors stop collecting correct
+ data after a while.
+ For nodeid 3, 78, 145, we note that there are not that many correct observation
+s for these nodeid's.
+ We will thus remove these nodeid completely.
+ 
+\begin_inset Newline newline
+\end_inset
+
+We then look at the nodeid 123, and 141, and cutoff the part from which
+ the data appear to be wrong.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Incident PAR and Reflected PAR - These two sensor roughly measure the sunlight
+ energy available for tree for photosynthesis.
+ As such, we expect the measure to read 0 during night.
+ The data does not match the summary of the paper.
+ The paper claims the maximum of Incident PAR to be 2154, we find the maximum
+ in data to be in the range of 100,000.
+ 
+\begin_inset Newline newline
+\end_inset
+
+Plotting 
+\begin_inset Quotes eld
+\end_inset
+
+hamatop
+\begin_inset Quotes erd
+\end_inset
+
+ (Incident PAR) for each nodeid, we find that in both 
+\begin_inset Quotes eld
+\end_inset
+
+net
+\begin_inset Quotes erd
+\end_inset
+
+ data and 
+\begin_inset Quotes eld
+\end_inset
+
+log
+\begin_inset Quotes erd
+\end_inset
+
+ data, hamatop of node 135 never reaches zero.
+ Looking at 
+\begin_inset Quotes eld
+\end_inset
+
+net
+\begin_inset Quotes erd
+\end_inset
+
+ data, we see that 
+\begin_inset Quotes eld
+\end_inset
+
+hamatop
+\begin_inset Quotes erd
+\end_inset
+
+ is always around 30,000 even at night.
+ The other value column of humidity and temperature seems to be fine.
+ However, nodeid 135 is the one associated with strange voltage of 0.580567
+ above.
+ Moreover, in 
+\begin_inset Quotes eld
+\end_inset
+
+locs
+\begin_inset Quotes erd
+\end_inset
+
+ data, we don't even see note 135 listed there.
+ As such we make the call of removing node 135 completely.
+\end_layout
+
+\begin_layout Enumerate
+Nodeid with few data - Finally we'll remove those nodeid with fewer than
+ three days worth of data (~864 data points).
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Remove Dubplicate Data
+\end_layout
+
+\begin_layout Standard
+Each observation should be uniquely identified by the nodeid and epoch.
+ However there are multiple observations within each dataset that have the
+ same combination of (nodeid, epoch).
+ We look at these observation and find that they are just duplicate of each
+ other (the difference in measurement of these observations with same pair
+ nodeid, epoch is very small).
+ There are however a few observation where nodeid and epoch are the same
+ but hamatop or hamabot are different by 1000 to 2000.
+ We are not sure which of the two observation is valid so at the end we
+ take the average of the those with the same identity (epoch + nodeid).
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Joining the two datasets
+\end_layout
+
+\begin_layout Standard
+After cleaning each dataset, we finally attempt to join the two.
+ There are 69,401 observations out of 93,322 observations in 
+\begin_inset Quotes eld
+\end_inset
+
+net
+\begin_inset Quotes erd
+\end_inset
+
+ dataset share the identity with an observation in 
+\begin_inset Quotes eld
+\end_inset
+
+log
+\begin_inset Quotes erd
+\end_inset
+
+ dataset.
+ Looking at the difference of sensors' measurement, we find out they are
+ the same between 
+\begin_inset Quotes eld
+\end_inset
+
+log
+\begin_inset Quotes erd
+\end_inset
+
+ and 
+\begin_inset Quotes eld
+\end_inset
+
+net
+\begin_inset Quotes erd
+\end_inset
+
+ dataset.
+ Thus to combine the two dataset, we just append the part of 
+\begin_inset Quotes eld
+\end_inset
+
+net
+\begin_inset Quotes erd
+\end_inset
+
+ that is not in 
+\begin_inset Quotes eld
+\end_inset
+
+log
+\begin_inset Quotes erd
+\end_inset
+
+ to log.
+ After that, we sort all observation first by nodeid, second by epoch.
+ 
+\end_layout
+
+\begin_layout Subsection
+Data Exploration
+\end_layout
+
+\begin_layout Subsubsection
+Histogram
+\end_layout
+
+\begin_layout Standard
+We first look at the histogram of each of the four variables in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "hist_all"
+
+\end_inset
+
+.
+ For the humidity measure, we see a somewhat uniform distribution of humidity
+ from around 20 to 100.
+ We observe some observations get higher than 100, which does not make sense
+ because the humidity percentage should be between 0 and 100.
+ However, we keep these observations, suspecting that there is numerical
+ error with the sensor.
+ The values bigger than 100 are not too off from 100.
+ Our histogram somewhat matches with the histogram and discription of the
+ paper.
+ The temperature distribution is a bit right-tail, with two modes at around
+ 
+\begin_inset Formula $9^{o}C$
+\end_inset
+
+ and 
+\begin_inset Formula $15^{o}C$
+\end_inset
+
+.
+ This also matches the paper.
+ 
+\end_layout
+
+\begin_layout Standard
+For the Incident PAR and Reflected PAR measure, 55% of the Incident PAR
+ and 86% of the Reflected PAR measures are zero.
+ As such we only plot the histogram for non-zero valur of PAR for purpose
+ of illustration.
+ We also scale the x axis of the histogram by log base 10.
+ Unlike the two measures temperature and humidity, the two measures Incident
+ PAR and Reflected PAR in our histogram do not match the description and
+ histogram of the paper.
+ In the paper, Incident PAR ranges from 0 to 2000, while ours ranges from
+ 0 to 100,000.
+ And the large observations do not seem to occur in isolation.
+ Similarly for the Reflected PAR.
+ We suspect there is a difference in unit measurement of PAR.
+ In fact Table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "max_par"
+
+\end_inset
+
+ compares our max values for the two PAR's and the paper's reported max
+ values.
+ The ratio is almost the same.
+ If our hypothesis is true, then the change in unit measurement should be
+ 
+\begin_inset Formula $113376/2154=52.6.$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="4">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Max Incident PAR
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Max Reflected PAR
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Ratio
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Our data
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+113376
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+9480.77
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+11.95982
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Paper
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2154
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+180
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+11.96667
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Compare PAR Value
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "max_par"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Box Doublebox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "90col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename data/hist_all.png
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Histogram of Variables.
+ We exclude the zero value for the two PAR measures.
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "hist_all"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Pair Relationship
+\end_layout
+
+\begin_layout Standard
+We notice that humidity and temperature are negatively correlated, as depicted
+ in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "humid_temp_loes"
+
+\end_inset
+
+.
+ This is expected as when it gets hot, water evaporates more.
+ The correlation is very high at -0.83.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Box Doublebox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "90col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename data/humid_temp_loess.png
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Scatter Plot of Humidity vs.
+ Temperature
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "humid_temp_loes"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Secondly, we attempt to find a relationship between Incident PAR and Reflected
+ PAR.
+ In Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "incident_reflected_par"
+
+\end_inset
+
+, we see no apparent linear relationship from the scatter plot.
+ However we notice that Reflected PAR tends to come from a multiple of some
+ value.
+ We suspect this might be related to the change in unit measurement we discussed
+ above.
+ We will investigate this problem in Section 4.
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Box Doublebox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "90col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename data/incident_reflected_PAR.png
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Scatter Plot of Incident PAR vs.
+ Reflected PAR
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "incident_reflected_par"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Graphical Critique
+\end_layout
+
+\begin_layout Standard
+In Figure 3 and Figure 4 of the paper, the author attemtps to summary the
+ measurement.
+ He considers each observation as four separate datapoint, each datapoint
+ lies in a 3-dimension space of time, space (height), and value (reading
+ of each sensor).
+ He projects each of these points into one dimension and two dimension space
+ to illustrate the general trend.
+ 
+\end_layout
+
+\begin_layout Standard
+Figure 3 part a plots the histogram of each of the four measurement.
+ The result is similar to what we had before.
+ The author however didnot exclude zero measurement out of the histogram
+ for Incident PAR and Reflected PAR, as such the main thing we see from
+ the histogram of Incident PAR and Reflected PAR is that most of the value
+ are close to zero.
+ We don't see the distribution of non-zero measurement clearly, which at
+ the end is what we are interest in.
+ 
+\end_layout
+
+\begin_layout Standard
+Figure 3 part b plots the projection of data point into the time and value
+ dimension.
+ Note that time here is bucked by day (not 5 minute, the smallest possible
+ bucket).
+ We see clearly the trend in temperature and humidity from the plot.
+ However we don't see much from he Incident PAR and Reflected PAR plot.
+ We suggest log-scale the measurement of these values before plotting, as
+ the distribution of these values have very long tail.
+ 
+\end_layout
+
+\begin_layout Standard
+Figure 3 part c and part d plot the projection of data point into the space
+ and value dimension.
+ We see an interesting pattern for Incident PAR and Reflected PAR, both
+ measurement go down when the height decreases on average.
+ This is expected as there is more sun light at the top of the tree.
+ We don't see any obvious trend from humidity and temperature.
+ This might be due to the horizontal distribution of the sensor.
+ Those closer to the body of the tree might be colder and more humid, comparing
+ with those further away.
+ 
+\end_layout
+
+\begin_layout Standard
+Figure 4 the left side plots the daily value of the four sensors to see
+ the daily trend.
+ We see some interesting pattern for example temperature peaks during the
+ afternoon at around 2-3pm.
+ During the day there is much more variation in temperature across the height
+ of the tree, while during the night the temperature is similar from different
+ part of the tree.
+ Humidity on the other hand peaks in the morning.
+ We propose that is the case because in the morning, with a little bit of
+ warming up the water evaporates from earth, increasing the humidity.
+ When it gets to noon, most of the water has gone outside of the tree, reducing
+ the humidity.
+ For these plot, it would help if the author color the measurement from
+ different sensor in a gradient and print the gradient together with the
+ plot.
+ Reader can see for example if temperature at higher part of the tree is
+ higher than temperature at lower part.
+ For the two PAR measures, we see the apparent trend that they are zero
+ during the night, and positive during the day.
+ 
+\end_layout
+
+\begin_layout Standard
+Figure 4 the right side plots the average measurement of each sensor with
+ respect to height.
+ This one is very descriptive.
+ We see how humidity decreases as we go up the tree, how temperature increases.
+ Incident PAR is on average big for the upper part of the tree, while Reflected
+ PAR is only slightly positive (relative to Incident PAR) on the upper most
+ part of the tree.
+ However for the Reflected PAR plot, we do not see why the author has the
+ x-axis limit from 0 to 200, when there is no datapoint higher than 50.
+ Again a log-scale plot might have helped here.
+ 
+\end_layout
+
+\begin_layout Section
+Findings
+\end_layout
+
+\begin_layout Subsection
+Predicting the Unit Measurement Change for PAR
+\end_layout
+
+\begin_layout Standard
+As seen in Figure 6, the measurement of Reflected PAR seems to come from
+ multiple of some values.
+ We suspect this has something to do with the change in unit measurement.
+ In fact in the density plot of Incident PAR and Reflected PAR, each divided
+ by 53.4 (Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "change_unit_par"
+
+\end_inset
+
+).
+ Note that the number 53.4 was obtained by hand, adjusting the plot for multiple
+ numbers with a starting point of 52.6 (obtained from the max ratio in Table
+ 1).
+ We see that the density peaks at those of multiple of 10.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Box Doublebox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "90col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename data/change_unit_PAR.png
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Density Plot of Rescaled PAR's
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "change_unit_par"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We will attempt to estimate this multiple statistically.
+ We propose that each data point should be a natural multiple of a number,
+ with error due measurement.
+ For now we assume the error to be IID across different level.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+x_{i}=n\theta+\epsilon_{i},n\in\mathbb{N}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We are aware that for large 
+\begin_inset Formula $x,$
+\end_inset
+
+ the error should be larger since measurement error should be larger.
+ Also, if theta were very small then error would be close to zero.
+ As such we introduce the prior that 
+\begin_inset Formula $\theta$
+\end_inset
+
+ should be around 530.
+ We attempt to find 
+\begin_inset Formula $\theta$
+\end_inset
+
+ that minimizes Mean Absolute Deviation (MAD):
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+MAD=\frac{1}{n}\sum_{i=1}^{n}\mid\frac{x_{i}}{\theta}-{\rm round}(\frac{x_{i}}{\theta})\mid
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+With no predictive power, we expect the average error to be from 
+\begin_inset Formula $0$
+\end_inset
+
+ to 
+\begin_inset Formula $0.5.$
+\end_inset
+
+ As such an upper bound for MAD is 0.25.
+ The closer MAD to zero, the more we are sure that there is such a change
+ in unit measurement.
+ (Round function round a number to nearest integer as expected).
+ 
+\end_layout
+
+\begin_layout Standard
+We do a simple grid search to find the value of theta that minimize the
+ above MAD.
+ We exclude the zero value from this, since zero is always a multiple of
+ any number, as such the error is always zero.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "theta_grid"
+
+\end_inset
+
+ top plots depict the MAD as a function of theta for all nonzero data.
+ We note that for very large datapoint, the error should be larger (from
+ Figure 7).
+ As such we restrict the data to those in interval (0, 400), and obtain
+ the plot as seen in the bottom part of Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "theta_grid"
+
+\end_inset
+
+.
+ We see a nice minimum of 0.125 attainned when 
+\begin_inset Formula $\theta=532$
+\end_inset
+
+ for Incident PAR data (restricted to interval (0, 4000)).
+ For Reflected PAR, minimum is 0.080 attained when 
+\begin_inset Formula $\theta=535.$
+\end_inset
+
+ So our estimte of 534 from adjusting the plot was a good one.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Box Doublebox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "90col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename data/theta_grid.png
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Finding the Best Theta - Change in Unit for PAR
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "theta_grid"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For reader who wants to dig more into this, we can change the assumption
+ of same error at different x to an error inversely adjusted to the magnitude
+ of x.
+ This assumption fits the intuition that for large x's, error in measurement
+ (and other error) is expected to be larger.
+ Using a square root penalty for error associated with large x, we can minimize:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+aMAD=\sum\frac{\mid\frac{x}{\theta}-{\rm round}(\frac{x}{\theta})\mid}{\sqrt{x}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Interior Tree vs.
+ Edge Tree
+\end_layout
+
+\begin_layout Standard
+From the 
+\begin_inset Quotes eld
+\end_inset
+
+locs
+\begin_inset Quotes erd
+\end_inset
+
+ file, we find that there are in fact two separate tree.
+ We try to compare the data for two trees.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "interior_edge"
+
+\end_inset
+
+ plots the difference of the four measurements between the two trees.
+ If we assume that the edge tree lies in the edge of the forest, while the
+ interior tree lies in the middle of the forest, then it is expected that
+ the interior tree has higher humidity, lower temperature.
+ The plots confirms out expectation.
+ 
+\end_layout
+
+\begin_layout Standard
+However it is hard to compare the two PAR measures between the two trees.
+ We suppose this is because temperature and humidity are somewhat continuous
+ measure with respect to space, while the amount of sunlight received is
+ not, as sunlight move in line.
+ It can happens that one small area in the middle of the tree get sunlight
+ while the part next to it does not.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Box Doublebox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "90col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename data/edge_interior.png
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Interior Tree vs.
+ Edge Tree
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "interior_edge"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Distance From Body
+\end_layout
+
+\begin_layout Standard
+We try to see if distance from body of the tree has any correlation with
+ the temperature.
+ We expect that the closer to the tree, the lower the temperature, as there
+ is less sunlight reaching the center of the tree.
+ We have the boxplot in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "dist_temp"
+
+\end_inset
+
+.
+ For the interior tree, we see for a few nodeid at the lower part, their
+ average temperatures are higher than their neighbor's ones.
+ However up top there are a few nodeid with distance 3 meter away from the
+ body, and there seems to be no difference from their neighbors' temperature
+ with distance 0.1 meter.
+ 
+\end_layout
+
+\begin_layout Standard
+For the edge tree, we do not see much of a difference in temperature of
+ nodeids with different distance from the body of the tree.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Box Doublebox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename data/dist_temp.png
+	scale 75
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Boxplot of Temperature w.r.t Height.
+ Colored by Distance From Body
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "dist_temp"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Discussion
+\end_layout
+
+\begin_layout Standard
+On the surface, for each tree there are only two location dimension, namely
+ the height, and time.
+ However, the data has in fact more dimension that that.
+ Firstly time exhibits a daily effect, and a seasonal effect.
+ Secondly beside height, we need to take into account the distance from
+ the body of the tree, and the direction it face.
+ So each of the elementary, time and space, is a three dimension data point
+ in itself.
+ This makes analyzing data much more difficult.
+ 
+\end_layout
+
+\begin_layout Standard
+If we arevage things, we need to take into account the effect of the other
+ dimension that we are averaging.
+ For example, in Finding 4.2, we note the the temperature goes up in general
+ as the height increases.
+ However, for some nodeid, it might be located outside the body of the tree,
+ thus get a higher temperature.
+ For other nodeid, it faces Sought, thus get a different amount of sunlight
+ compare with those nodeid facing North, depending on the position of the
+ sun on the sky (e.g.
+ in the winter the South nodes should get more sun than the north nodeids).
+ 
+\end_layout
+
+\begin_layout Standard
+The datasize is not much a problem in this lab.
+ Sometimes the plot can get very slow, but this is a R specific problem.
+ One can always sample the data to alleviate this problem.
+ What restrict us from analyzing this data is a lack of clarification on
+ data.
+ For example why do we have separate 
+\begin_inset Quotes eld
+\end_inset
+
+log
+\begin_inset Quotes erd
+\end_inset
+
+ data and 
+\begin_inset Quotes eld
+\end_inset
+
+net
+\begin_inset Quotes erd
+\end_inset
+
+ data? Why does the 
+\begin_inset Quotes eld
+\end_inset
+
+Incident PAR
+\begin_inset Quotes erd
+\end_inset
+
+ measure scale different from that reported in the paper.
+ We propose a hypothesis for this (4.1), but it is nice to know more what
+ data is describing what in what unit.
+ 
+\end_layout
+
+\begin_layout Standard
+Still, overall it is an interesting problem with many dimensions that one
+ can look at.
+ 
+\end_layout
+
+\begin_layout Section
+Conclusion
+\end_layout
+
+\begin_layout Standard
+This is an interesting yet 
+\begin_inset Quotes eld
+\end_inset
+
+dirty
+\begin_inset Quotes erd
+\end_inset
+
+ problem.
+ If we were to collect the data one more time, we suggest keeping as many
+ variable constant as possible (e.g.
+ direction, distance from body).
+ 
+\end_layout
+
+\end_body
+\end_document

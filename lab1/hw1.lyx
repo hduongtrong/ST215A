@@ -1,0 +1,670 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\begin_modules
+theorems-ams-bytype
+\end_modules
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+STAT 215A - HW1
+\end_layout
+
+\begin_layout Author
+Hoang Duong
+\end_layout
+
+\begin_layout Section
+Hypothesis Testing, T-distribution
+\end_layout
+
+\begin_layout Standard
+1.
+ and 2.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+s_{pooled}^{2}= & \frac{1}{2n-2}((n-1)s_{x}^{2}+(n-1)s_{y}^{2})\\
+= & \frac{1}{2n-2}\sum_{i=1}^{n}\left(\left(x_{i}-\bar{x}\right)^{2}+\left(y_{i}-\bar{y}\right)^{2}\right)\\
+\mathbb{E}s_{p}^{2}= & \frac{1}{2n-2}\sum_{i=1}^{n}\left(\mathbb{E}\left[(x_{i}-\mu_{x})^{2}\right]-\mathbb{E}\left[(\mu_{x}-\bar{x})^{2}\right]+\mathbb{E}\left[(y_{i}-\mu_{y})^{2}\right]-\mathbb{E}\left[(\mu_{y}-\bar{y})^{2}\right]\right)\\
+= & \frac{1}{2n-2}\left(n\sigma^{2}-\sigma^{2}+n\sigma^{2}-\sigma^{2}\right)=\sigma^{2}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+3.
+ The above statement is only right if 
+\begin_inset Formula $\rho=0,$
+\end_inset
+
+ which means 
+\begin_inset Formula $X$
+\end_inset
+
+ and 
+\begin_inset Formula $Y$
+\end_inset
+
+ were independent.
+ 
+\end_layout
+
+\begin_layout Standard
+4.
+ For the case of dependent pair test, 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+s_{diff}^{2}= & \frac{1}{n-1}\sum(x_{i}-y_{i}-\bar{x}+\bar{y})^{2}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+5.
+ 
+\begin_inset Formula $t_{paired}$
+\end_inset
+
+ has a t-distribution with 
+\begin_inset Formula $n-1$
+\end_inset
+
+ degree of freedom.
+ 
+\end_layout
+
+\begin_layout Standard
+6.
+ Expectation of 
+\begin_inset Formula $s_{diff}^{2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+\mathbb{E}s_{diff}^{2}= & \frac{1}{n-1}\sum\mathbb{E}\left\{ \left[\left(x_{i}-\bar{x}\right)^{2}\right]+\mathbb{E}\left[\left(y_{i}-\bar{y}\right)^{2}\right]-2\mathbb{E}\left[\left(x_{i}-\bar{x}\right)\left(y_{i}-\bar{y}\right)\right]\right\} \\
+= & \frac{1}{n-1}\left\{ (n-1)\sigma^{2}+(n-1)\sigma^{2}-2(n-1)\sigma^{2}\rho\right\} \\
+= & 2\sigma^{2}(1-\rho)
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+7.
+ Compare
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+s_{diff}^{2}\frac{1}{n}= & \frac{2}{n}\sigma^{2}(1-\rho)\\
+s_{pooled}^{2}\frac{2}{n}= & \frac{2}{n}\sigma^{2}\\
+s_{diff}^{2}\frac{1}{n}< & s_{pooled}^{2}\frac{2}{n}\\
+\Leftrightarrow1-\rho< & 1\\
+\Leftrightarrow\rho>0
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Also:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+\mathbb{E}\left[s_{diff}^{2}\frac{1}{n}\right]< & \mathbb{E}\left[s_{pooled}^{2}\frac{2}{n}\right]\\
+\Leftrightarrow\frac{2}{n}\sigma^{2}(1-\rho)< & \frac{2}{n}\sigma^{2}\\
+\Leftrightarrow1-\rho< & 1\\
+\Leftrightarrow\rho> & 0
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+8.
+ From these computation, we learn that if 
+\begin_inset Formula $x$
+\end_inset
+
+ and 
+\begin_inset Formula $y$
+\end_inset
+
+ are positively correlated, 
+\begin_inset Formula $s_{pooled}^{2}\frac{2}{n}$
+\end_inset
+
+ is bigger than 
+\begin_inset Formula $s_{diff}^{2}\frac{1}{n},$
+\end_inset
+
+ as such 
+\begin_inset Formula $t<t_{paired}.$
+\end_inset
+
+ We are under-confidence about the power of t using the naive 
+\begin_inset Formula $s_{pooled}^{2}$
+\end_inset
+
+.
+ On the other hand, if 
+\begin_inset Formula $x,y$
+\end_inset
+
+ are negatively correlated, we will be over-confidence about the power of
+ t using the naive 
+\begin_inset Formula $s_{pooled}^{2}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Section
+Freedman questions
+\end_layout
+
+\begin_layout Subsection
+Book questions
+\end_layout
+
+\begin_layout Enumerate
+In the HIP trial, the evidence confirming that treatment has no effect on
+ death from other causes is from intention-to-treat analysis, the death
+ rate by other causes for the treatment group (both those who accepted and
+ refused) is 27/1000, while the death rate by other causes for the control
+ group is 28/1000.
+ This is a very small difference.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Someone wants to analyze the HIP data by comparing the women who accept
+ screening to the controls.
+ The benefit of this is that we directly compare those who did receive the
+ treatment, to those who did not.
+ However, this introduces a confounding effect, because those who accept
+ to receive the treatment can be difference from those in the control group.
+ In particular, those accept the treatment seem likely to come from richer
+ background (the more educated ones).
+ Those in the control group is an average of the population both rich and
+ poor.
+ As such the two population might not be directly comparable.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Snow's study of the epidemic of 1853-54 is a natural experiment, as he didn't
+ plan on suplying different water sources randomly to different household.
+ It just happend that way, and he found out about it.
+ In 1852, the Lambeth water company moved its intake pipe upstream to get
+ purer water.
+ The Southwark and Vauzhall company left its intake pipe where it was, in
+ a heavily contaminated stretch of the Thames.
+ 
+\begin_inset Newline newline
+\end_inset
+
+It matters because it naturally creates two groups with only difference
+ is the source of water, all other factors such as social status, gender,
+ location are controled.
+ As Snow explains, 
+\begin_inset Quotes eld
+\end_inset
+
+A few houses are supplied by one Company and a few by the other, according
+ to the decision of the owner or cccupier at that time when the Water Companies
+ were in active competition.
+ In many cases a single house has a supply different from that on either
+ side.
+ Each company supplies both rich and poor, both large houses and small;
+ there is no difference either in the condition or occupation of the persons
+ receiving the water of the different Companies
+\begin_inset Quotes erd
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Yule's study was an observational study, as there he did not make any random
+ choice of which district follow what policies.
+ He simply observed the data.
+ He however took into account a few factors that might affect the variable
+ he was predicting (percentage change in number of poor people), namely
+ the population of the district, the percentage of the population aged over
+ 65.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Had the coefficient for 
+\begin_inset Formula $\Delta Out$
+\end_inset
+
+ been -.755, Yule would have had to conclude that out-relief causes wealthiness.
+ If the coefficient had been +0.005, Yule would have concluded that out-relief
+ has not effect on poverty.
+ One percentage change in out-relief according to the model only increases
+ 0.005% change in poverty rate.
+ 
+\end_layout
+
+\begin_layout Enumerate
+The study shows a correlation between performing religious coping method
+ amd having less joint pain.
+ There might be a causation, but there might be not here.
+ It can be that on a day with less pain, patients are in a more positive
+ mood, so they feel more religious and connected with God.
+ In fact people feel more connected with other people, with anything tree,
+ animals when they recover from pain.
+ So the causation relationship can be from less joint pain to religious
+ coping method.
+\begin_inset Newline newline
+\end_inset
+
+There is another possibility of a third confounding factor that causes both
+ less joint pain and participating religious coping method.
+ Maybe on a raining day, humid weather worsen the pain.
+ People also feels more groomy, and less inclined to perform religious ritual.
+ 
+\end_layout
+
+\begin_layout Subsection
+John Snow's Map
+\end_layout
+
+\begin_layout Standard
+I would transform this map into numerical measures by having a pair of x,
+ y denote the coordination on the map, and the first observation 
+\begin_inset Quotes eld
+\end_inset
+
+pump
+\begin_inset Quotes erd
+\end_inset
+
+ equal to one to denote there is a pump at that location, and the second
+ observation 
+\begin_inset Quotes eld
+\end_inset
+
+cholera
+\begin_inset Quotes erd
+\end_inset
+
+ equal to the number of cholera patient at that location.
+ So for example the dataset look like Table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "example_data"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="5" columns="4">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+x
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+y
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Quotes eld
+\end_inset
+
+pump
+\begin_inset Quotes erd
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Quotes eld
+\end_inset
+
+cholera
+\begin_inset Quotes erd
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+10
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+3
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+12
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+4
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+12
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+5
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+5
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Example Data
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "example_data"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+With this dataset, we would be easily measure Euclidean distance (bird distance)
+ from pump to cholera patient or pump to pump.
+ However, we lost information about the structure of the map.
+ For example, two points may be close in Euclidean distance, but they might
+ be far away to walk from one to the other.
+ So people can go to the pump that is closer in walking distance but further
+ in Euclidean distance.
+ 
+\end_layout
+
+\end_body
+\end_document
