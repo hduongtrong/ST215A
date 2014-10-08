@@ -19,7 +19,11 @@ net <- read.csv('sonoma-data-net.csv',header=T)
 all <- read.csv('sonoma-data-all.csv', header=T)
 locs <- read.table('mote-location-data.txt', header=T)
 
-
+head(net)
+2812%%288
+18*12+5
+220-18*12
+18*12
 # 2. Handling Outlier
 # 2.1 Remove Uninformative Columns
  
@@ -406,6 +410,7 @@ if (is.plot) grid.arrange(plot1, plot2, plot3, plot4, nrow = 2, ncol = 2)
 # 4.3. Third Findings
 
 all$dist = locs$Dist[match(all$nodeid, locs$ID)]
+all$tree = locs$Tree[match(all$nodeid, locs$ID)]
 plot1 = ggplot(data = all[inte.tree,], 
   aes(x = height, y = humid_temp, group = nodeid, color = factor(dist))) + 
   geom_boxplot(outlier.shape = NA) + coord_flip() + 
@@ -416,3 +421,18 @@ plot2 = ggplot(data = all[edge.tree,],
   geom_boxplot(outlier.shape = NA) + coord_flip() + 
   ggtitle("Boxplot for Edge Tree") + ylab("Temperature")
 if (is.plot) grid.arrange(plot1, plot2, ncol = 2)
+
+
+# 5. Further
+ii = !is.na(all$tree)
+all = all[ii,]
+gn = c(134,141,142,143,145)
+if (is.plot) plot1 = ggplot(data = all[(all$hamatop/56.5<50) & all$nodeid %in% gn,], 
+       aes(x = hamatop/56.5, y = humidity)) + geom_point() + 
+       ggtitle("For nodeid 134, 141, 142, 143, 145")
+if (is.plot) plot2 = ggplot(data = all[(all$hamatop/56.5<50) & !(all$nodeid %in% gn),],
+       aes(x = hamatop/56.5, y = humidity)) + geom_point() +
+       ggtitle("For nodeid other than above")
+grid.arrange(plot1, plot2, nrow = 2)
+xyplot(humidity ~ hamatop | factor(nodeid), 
+       data = all[(all$hamatop/53.1<50),], type = "p")

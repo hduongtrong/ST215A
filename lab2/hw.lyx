@@ -1,0 +1,578 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\begin_modules
+theorems-ams-bytype
+\end_modules
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Homework 2 - Kernel Density and MDS
+\end_layout
+
+\begin_layout Title
+STAT 215A, Fall 2014
+\end_layout
+
+\begin_layout Author
+Hoang Duong
+\end_layout
+
+\begin_layout Section
+Kernel Density Estimation
+\end_layout
+
+\begin_layout Standard
+In plotting histogram or kernel density, there is a parameter h that we
+ can choose (h is the number of bins in histogram, or the inverse of bandwidth
+ in kernel density).
+ With this parameter h, the higher it is, the less bias we have as on average
+ it looks like the original density function.
+ However, the higher h is, the higher is the variance.
+ That is if we were to do subsampling, we will see the histogram and density
+ plot differ widely from one to the other.
+ This inverse relation of lower bias associated with higher variance and
+ higher bias associated with lower variance is called the bias variance
+ tradeoff.
+ 
+\end_layout
+
+\begin_layout Standard
+The bias term is:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+\mathbb{E}\left[\hat{f}(x)-f(x)\right]\approx & \frac{f''(x)}{2}\left(\int t^{2}K(t)dt\right)h^{2}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+As we can see the lower the as h decreases, the bias also decreases with
+ the speed of 
+\begin_inset Formula $h^{2}.$
+\end_inset
+
+ This makes sense as the lower the bandwidth, the lower bias we have as
+ we do not introduce bias of one point to its neighbors.
+ We also see that bias is not influenced by n.
+ This also makes sense because more data only lead to lower variance in
+ our estimate, and should not have an effect on bias.
+ All of this fit with our explaination from previous answer.
+\end_layout
+
+\begin_layout Section
+Multidimensional Scaling
+\end_layout
+
+\begin_layout Standard
+1.
+ Before we proceed, we want to clarify the notatin.
+ In writing:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+Z= & (z_{1},z_{2},...,z_{n})^{'}\\
+= & \left[\begin{array}{c}
+z_{1}\\
+z_{2}\\
+...\\
+z_{n}
+\end{array}\right]
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We implicitely assume that 
+\begin_inset Formula $z_{i}$
+\end_inset
+
+ are row vector.
+ But then in writing 
+\begin_inset Formula $b_{rs}=(z_{r}-\bar{z})'(z_{s}-\bar{z})$
+\end_inset
+
+ we implicitely assume that 
+\begin_inset Formula $z_{i}$
+\end_inset
+
+ are column vector.
+ To avoid the conflict, we propose consider 
+\begin_inset Formula $z_{i}$
+\end_inset
+
+ to be the conventional column vector.
+ Thus 
+\begin_inset Formula $Z$
+\end_inset
+
+ should be rewritten as 
+\begin_inset Formula $(z_{1}^{'},z_{2}^{'},...,z_{n}^{'})^{'}$
+\end_inset
+
+.
+ Also we will change the transpose notation to 
+\begin_inset Formula $z^{T}.$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+For any 
+\begin_inset Formula $n\times n$
+\end_inset
+
+ matrix 
+\begin_inset Formula $C,$
+\end_inset
+
+ 
+\begin_inset Formula $HCH$
+\end_inset
+
+ double-center 
+\begin_inset Formula $C$
+\end_inset
+
+ both by row and by column.
+ Let 
+\begin_inset Formula $S=(Z-\bar{Z})(Z-\bar{Z})^{T},$
+\end_inset
+
+ for 
+\begin_inset Formula $\bar{Z}=((z_{1}-\bar{z})^{T},(z_{2}-\bar{z})^{T},...,(z_{n}-\bar{z})^{T})^{T}.$
+\end_inset
+
+ Let 
+\begin_inset Formula $s$
+\end_inset
+
+ be the column vector of the diagonal of 
+\begin_inset Formula $S,$
+\end_inset
+
+ 
+\begin_inset Formula $\boldsymbol{1}$
+\end_inset
+
+ be the column vector of n ones.
+ Then we have:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+d_{rs}^{2}= & (z_{r}-z_{s})^{T}(z_{r}-z_{s})\\
+\Rightarrow D_{2}= & s\boldsymbol{1}^{T}+\boldsymbol{1}s^{T}-2S\text{ (1)}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $D_{2}$
+\end_inset
+
+ denote the square distance matrix (element-wise square of 
+\begin_inset Formula $D$
+\end_inset
+
+).
+ Now since 
+\begin_inset Formula $s\boldsymbol{1}^{T}$
+\end_inset
+
+ has rows of constant, 
+\begin_inset Formula $Hs\boldsymbol{1}^{T}H=0.$
+\end_inset
+
+ 
+\begin_inset Formula $\boldsymbol{1}s^{T}$
+\end_inset
+
+ has columns of constant, 
+\begin_inset Formula $H\boldsymbol{1}s^{T}H=0.$
+\end_inset
+
+ Now multiply both side of 
+\begin_inset Formula $(1)$
+\end_inset
+
+ in the left and right with H, we have:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+HD_{2}H= & -2HSH\\
+\Rightarrow HAH= & HSH
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Now since 
+\begin_inset Formula $Z-\bar{Z}$
+\end_inset
+
+ has columns summing up to zero, 
+\begin_inset Formula $S=(Z-\bar{Z})(Z-\bar{Z})^{T}$
+\end_inset
+
+ has both rows and columns summing up to zero.
+ Thus 
+\begin_inset Formula $HSH=S.$
+\end_inset
+
+ In conclusion 
+\begin_inset Formula $B=S.$
+\end_inset
+
+ or 
+\begin_inset Formula $b_{rs}=(z_{r}-\bar{z})^{T}(z_{s}-\bar{z}).$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+It is obvious that 
+\begin_inset Formula $S$
+\end_inset
+
+ has the form 
+\begin_inset Formula $CC^{T}$
+\end_inset
+
+ is positive semidefinite, since for any vector 
+\begin_inset Formula $v,$
+\end_inset
+
+ 
+\begin_inset Formula $v^{T}Sv=v^{T}CC^{T}v=\|C^{T}v\|_{2}^{2}\ge0.$
+\end_inset
+
+ So B is also positive semidefininte.
+ 
+\end_layout
+
+\begin_layout Standard
+2.
+ By the Singular Value Decomposition 
+\begin_inset Formula $B=U\Lambda U^{T}$
+\end_inset
+
+.
+ And by design, 
+\begin_inset Formula $X=U\Lambda^{1/2}$
+\end_inset
+
+.
+ Thus 
+\begin_inset Formula $XX^{T}=B.$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+(a) Consider two points from 
+\begin_inset Formula $X,$
+\end_inset
+
+ namely 
+\begin_inset Formula $x_{i},x_{j}$
+\end_inset
+
+, their Eucledian distance square is:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+D(x_{i},x_{j})= & (x_{i}-x_{j})^{T}(x_{i}-x_{j})\\
+= & x_{i}^{T}x_{i}-2x_{i}^{T}x_{j}+x_{j}^{T}x_{j}\\
+= & b_{ii}-2b_{ij}+b_{jj}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We have 
+\begin_inset Formula $B=HAH\Rightarrow b_{ij}=a_{ij}-\frac{1}{n}\sum_{i=1}^{n}a_{ij}-\frac{1}{n}\sum_{j=1}^{n}a_{ij}+\frac{1}{n^{2}}\sum_{i=1}^{n}\sum_{j=1}^{n}a_{ij}$
+\end_inset
+
+ .
+ Thus:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+D^{2}(x_{i},x_{j})= & b_{ii}-2b_{ij}+b_{jj}\\
+= & a_{ii}-2a_{ij}+a_{jj}\\
+= & -2a_{ij}\\
+= & d_{ij}^{2}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Thus 
+\begin_inset Formula $x_{i},x_{j}$
+\end_inset
+
+ have interpoint distance given by 
+\begin_inset Formula $D.$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+(b) 
+\begin_inset Formula $B=XX^{T}$
+\end_inset
+
+ as shown above using the argument of Singular Value Decomposition.
+ We are left to show that the configuration has center of gravity 
+\begin_inset Formula $\bar{x}=0$
+\end_inset
+
+, which is equivalent with showing 
+\begin_inset Formula $x_{i}^{T}\boldsymbol{1}=0,\forall i\in\{1,2,...,p\}.$
+\end_inset
+
+ Note that 
+\begin_inset Formula $B\boldsymbol{1}=0$
+\end_inset
+
+ as B has columns summing up to zero.
+ Thus 
+\begin_inset Formula $\boldsymbol{1}$
+\end_inset
+
+ is an eigenvector of 
+\begin_inset Formula $B$
+\end_inset
+
+ corresponding to eigenvalue 0.
+ Thus 
+\begin_inset Formula $\boldsymbol{1}$
+\end_inset
+
+ is orthogonal to the columns of 
+\begin_inset Formula $X$
+\end_inset
+
+ or 
+\begin_inset Formula $x_{i}^{T}\boldsymbol{1}=0.$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout --Separator--
+
+\end_layout
+
+\begin_layout Standard
+Conclusion:
+\end_layout
+
+\begin_layout Standard
+To summay, given an Euclidean Distance matrix D, denote 
+\begin_inset Formula $D_{2}$
+\end_inset
+
+ the elementwise square of 
+\begin_inset Formula $D.$
+\end_inset
+
+Then the process of find X that takes 
+\begin_inset Formula $D$
+\end_inset
+
+ as its interpoint distance is as follow
+\end_layout
+
+\begin_layout Enumerate
+Double Centering 
+\begin_inset Formula $D_{2}:B=-\frac{1}{2}HD_{2}H$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Diagonalizing 
+\begin_inset Formula $B:$
+\end_inset
+
+ 
+\begin_inset Formula $B=U\Lambda U^{T}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Get 
+\begin_inset Formula $X=U\Lambda^{1/2}.$
+\end_inset
+
+ (restricting to those with positive eigenvalues).
+\end_layout
+
+\begin_layout Standard
+X can be visualized as follow: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\begin{array}{cccc}
+\sqrt{\lambda_{1}}x_{11} & \sqrt{\lambda_{2}}x_{21} & ... & \sqrt{\lambda_{p}}x_{1p}\\
+\sqrt{\lambda_{1}}x_{21} & \sqrt{\lambda_{2}}x_{22} & ... & \sqrt{\lambda_{p}}x_{2p}\\
+... & ... & ... & ...\\
+\sqrt{\lambda_{1}}x_{n1} & \sqrt{\lambda_{2}}x_{n2} & ... & \sqrt{\lambda_{p}}x_{np}
+\end{array}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Remark: 
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $p$
+\end_inset
+
+ be the rank of 
+\begin_inset Formula $B$
+\end_inset
+
+.
+ Then the original set of point can be reconstructed uniquely (up to a rotation
+ and translation by orthogonal matrix) by n points in 
+\begin_inset Formula $\mathbb{R}^{p}.$
+\end_inset
+
+ If instead we want to find n points in a lower dimension 
+\begin_inset Formula $l<p$
+\end_inset
+
+ that best preserves the orginal distance, we follow the same procedures
+ and pick 
+\begin_inset Formula $l$
+\end_inset
+
+ best eigenvalues and 
+\begin_inset Formula $l$
+\end_inset
+
+ associated eigenvectors.
+ 
+\end_layout
+
+\end_body
+\end_document

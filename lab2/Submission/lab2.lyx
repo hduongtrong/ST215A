@@ -1,0 +1,1647 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\begin_modules
+theorems-ams-bytype
+\end_modules
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Lab 2 - Linguistic Survey
+\end_layout
+
+\begin_layout Title
+Stat 215A, Fall 2014
+\end_layout
+
+\begin_layout Author
+Hoang Duong
+\end_layout
+
+\begin_layout Section
+Kernel Density Plots and Smoothing
+\end_layout
+
+\begin_layout Subsection
+Density Estimate of Temperature
+\end_layout
+
+\begin_layout Standard
+We plot the density estimate for temperature with different bandwidths and
+ different kernels in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "kernel"
+
+\end_inset
+
+.
+ We note in subplot 1 that the black plot uses smallest bandwidth is the
+ one with most variance, judging from the spiky shape.
+ The yellow and grey uses a bandwidth of 4 and 6 respectively on the other
+ hand look very smooth.
+ This agrees with our understanding that the higher the bandwidth, the lower
+ the variance.
+ However we lose precision as we increases the bandwidth, or put it another
+ way, the bias increases.
+ 
+\end_layout
+
+\begin_layout Standard
+In subplot 2, 3, and 4, we plot the density estimate for all the available
+ kernels in R for bandwidth 0.5, 0.1, 2 respectively.
+ We note that they all look very similar except the green one, which corresponds
+ to the rectangular kernel.
+ This happens because the rectangular kernel is discontinuous, with a big
+ jump at the end of the bandwidth.
+ All the other kernel are continuous (even though some are not differentiable
+ for example the triangle kernel).
+ This leads to the conclusion that kernel choice is not too important in
+ this context.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Box Doublebox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /Users/hd/Dropbox/School/ST215/Lab/lab1/data/density_bandwidth2.png
+	scale 40
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename /Users/hd/Dropbox/School/ST215/Lab/lab1/data/density_kernels05.png
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /Users/hd/Dropbox/School/ST215/Lab/lab1/data/density_kernels01.png
+	scale 40
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename /Users/hd/Dropbox/School/ST215/Lab/lab1/data/density_kernels20.png
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Subplot 1: Gaussian Density of Temperature with Different Bandwidth.
+ Color in order of increasing bandwidth: Black, Green, Blue, Cyan, Pink,
+ Yellow, Grey.
+\begin_inset Newline newline
+\end_inset
+
+Subplot 2: Density of Temperature with Different Kernel, Bandwidth 0.5.
+\begin_inset Newline newline
+\end_inset
+
+Subplot 3: Density of Temperature with Different Kernel, Bandwidth 0.1.
+\begin_inset Newline newline
+\end_inset
+
+Subplot 4: Density of Temperature with Different Kernel, Bandwidth 2.0.
+\begin_inset Newline newline
+\end_inset
+
+For The last three subplots, the green one that stands out is Rectangular
+ kernel (discontinuous) 
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "kernel"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Linear Smoothing with LOESS
+\end_layout
+
+\begin_layout Standard
+We plot in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "loess"
+
+\end_inset
+
+ the scatter plot of temperature with respect to humidity at 0:10am for
+ all nodeid available, all day.
+ The top two plot reflect the effect of LOESS bandwidth on the shape of
+ LOESS.
+ We notice that for lower bandwidth, similar to kernel density estimate,
+ we see more changes in the shape of LOESS.
+ This one is the one with less bias.
+ On the other hand the second plot with higher bandwidth has a very smooth
+ shape, which means low variance.
+ But it adapts not as well to the shape of data, or having more bias.
+ 
+\end_layout
+
+\begin_layout Standard
+The bottom two plots reflect the effect of the choice of smoothing function,
+ holding the bandwidth constant.
+ We see that for the linear smoothing LOESS, the LOESS line is very smooth,
+ and the band around it (standard error) is very small.
+ For the quadratic smoothing LOESS, the LOESS line has a lot more changing
+ direction, and the standard error at the two tails are also larger.
+ Thus again, we see the variance bias trade off in fitting a more complicated
+ polynomial: more complicated polynomial means more complicated model, which
+ leads to less bias but higher variance.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Box Doublebox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /Users/hd/Dropbox/School/ST215/Lab/lab1/data/loess_bandwidth.png
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /Users/hd/Dropbox/School/ST215/Lab/lab1/data/loess_linear_quadratic.png
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Scatter Plot with LOESS for Temperature vs.
+ Humidity at 0:10am
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "loess"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Linguistic Data - Introduction
+\end_layout
+
+\begin_layout Standard
+We have the linguistic data of around 45000 people answering 67 questions
+ such as: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Quotes eld
+\end_inset
+
+What words(s) do you use to address a group of two or more people
+\begin_inset Quotes erd
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Itemize
+you all
+\end_layout
+
+\begin_layout Itemize
+yous, youse
+\end_layout
+
+\begin_layout Itemize
+you lot
+\end_layout
+
+\begin_layout Itemize
+you guys
+\end_layout
+
+\begin_layout Itemize
+you 'uns
+\end_layout
+
+\begin_layout Itemize
+yins
+\end_layout
+
+\begin_layout Itemize
+you
+\end_layout
+
+\begin_layout Itemize
+other
+\end_layout
+
+\begin_layout Itemize
+y'all
+\end_layout
+
+\begin_layout Standard
+With this type of question, we can investigate the different dialects that
+ people are using, possible cluster people into cultural group.
+ The dataset contains zip code, together with city and state information,
+ as such we can investigate the role of geography in language.
+ For example, people from the Southern part of the US are expected to use
+ 
+\begin_inset Quotes eld
+\end_inset
+
+y'all
+\begin_inset Quotes erd
+\end_inset
+
+ often, while people from other part are likely using 
+\begin_inset Quotes eld
+\end_inset
+
+y'all
+\begin_inset Quotes erd
+\end_inset
+
+.
+ We want to see whether this happens to many other words, or it is just
+ a sole example where the Southern US differ from the rest.
+ 
+\end_layout
+
+\begin_layout Section
+The Data
+\end_layout
+
+\begin_layout Subsection
+Data Quality and Cleaning
+\end_layout
+
+\begin_layout Standard
+There are 1023 rows out of 47471 total rows that contain at least one NA
+ value.
+ Since this number is insignificant, we just remove them from our dataset.
+ Plotting the latitude with respect to the longtitude columns, we found
+ that there are 206 people having location outside of Continental US.
+ We also remove these data points for convenience.
+ 
+\end_layout
+
+\begin_layout Subsection
+Exploratory Data Analysis
+\end_layout
+
+\begin_layout Standard
+In Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "map_color_50"
+
+\end_inset
+
+,we plot the graph of everyone's location, and color the point by how they
+ answer the above mentioned question (Q50).
+ The graph confirms our prior knowledge that most of the people who use
+ 
+\begin_inset Quotes eld
+\end_inset
+
+you all
+\begin_inset Quotes erd
+\end_inset
+
+ or 
+\begin_inset Quotes eld
+\end_inset
+
+y'all
+\begin_inset Quotes erd
+\end_inset
+
+ are in the Southern part.
+ The rest of the US main use 
+\begin_inset Quotes eld
+\end_inset
+
+you guys
+\begin_inset Quotes erd
+\end_inset
+
+, while across both regions there are people using just 
+\begin_inset Quotes eld
+\end_inset
+
+you
+\begin_inset Quotes erd
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Box Doublebox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /Users/hd/Dropbox/School/ST215/Lab/lab2/map_q50.png
+	scale 15
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+How People Address A Group of People in the US
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "map_color_50"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We can also investigate the relationship between two questions.
+ In Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "Q50_Q56"
+
+\end_inset
+
+, the two left graphs are people who use 
+\begin_inset Quotes eld
+\end_inset
+
+you guys
+\begin_inset Quotes erd
+\end_inset
+
+ to address a group of people.
+ The two right graph are people who use 
+\begin_inset Quotes eld
+\end_inset
+
+you
+\begin_inset Quotes erd
+\end_inset
+
+ to address a group of people.
+ As we have notice from Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "map_color_50"
+
+\end_inset
+
+, there is not much difference in location between these two group.
+ However if we take into account whether they call 
+\begin_inset Quotes eld
+\end_inset
+
+soda
+\begin_inset Quotes erd
+\end_inset
+
+ (the top two graphs) and 
+\begin_inset Quotes eld
+\end_inset
+
+coke
+\begin_inset Quotes erd
+\end_inset
+
+ (the bottom two graphs), we see a pattern that people in the Mid-West tends
+ to use 
+\begin_inset Quotes eld
+\end_inset
+
+coke
+\begin_inset Quotes erd
+\end_inset
+
+, while people from the East Coast favor 
+\begin_inset Quotes eld
+\end_inset
+
+soda
+\begin_inset Quotes erd
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Box Doublebox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /Users/hd/Dropbox/School/ST215/Lab/lab2/map1
+	scale 50
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename /Users/hd/Dropbox/School/ST215/Lab/lab2/map2
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /Users/hd/Dropbox/School/ST215/Lab/lab2/map3
+	scale 50
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename /Users/hd/Dropbox/School/ST215/Lab/lab2/map4
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+How one Address A Group of People vs.
+ How One Call Sweetened Carbonated Beverage.
+ 
+\begin_inset Newline newline
+\end_inset
+
+Left: you guys
+\begin_inset Newline newline
+\end_inset
+
+Right: you
+\begin_inset Newline newline
+\end_inset
+
+Up: Soda
+\begin_inset Newline newline
+\end_inset
+
+Down: coke
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "Q50_Q56"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Dimension Reduction 
+\end_layout
+
+\begin_layout Subsubsection
+Theory of Multidimensional Scaling
+\end_layout
+
+\begin_layout Standard
+We now attempt to use a dimension reduction technique to our data.
+ First we transform the data into binary data as the problem suggested.
+ This gives us p = 468 columns.
+ We propose using Manhattan distance to measure the dissimilarity between
+ two people.
+ There are 67 questions in total, as such the largest possible distance
+ between two people in the binary data form is 134.
+ We will rescale the data by 134 to have data in the interval of 
+\begin_inset Formula $(0,1).$
+\end_inset
+
+ So the distance is measured as:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+D(x_{i},x_{k})= & \frac{1}{134}\|x_{i}-x_{k}\|_{1}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $x_{i},x_{k}\in\mathbb{R}^{468}.$
+\end_inset
+
+ (And there are 46242 of x's).
+ 
+\end_layout
+
+\begin_layout Standard
+Roughly speaking, the distance measures the percentage of time person i'th
+ have a different answer from person k'th.
+ 
+\end_layout
+
+\begin_layout Standard
+Now this empirical measure of distance is only meaningful for small distance,
+ i.e.
+ for people with similar dialect.
+ We transform the distance matrix into one that keep small distance roughly
+ the same, and scale down the big distances.
+ This method is taken from Diaconis, Goel, and Holmes (2008).
+ The transformed distance, called proximity, is defined as:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+P(x_{i},x_{k})= & 1-\exp(-D(x_{i},x_{k}))
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We then apply the standard Multidimensional Scaling technique by:
+\end_layout
+
+\begin_layout Enumerate
+Double Centering P: 
+\begin_inset Formula $B=-\frac{1}{2}HD_{2}H.$
+\end_inset
+
+ 
+\begin_inset Formula $H=I_{n}-\frac{1}{n}\boldsymbol{1}\boldsymbol{1}^{T}.$
+\end_inset
+
+ For 
+\begin_inset Formula $\boldsymbol{1}=(1,1,...,1).$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+Diagonalizing B: 
+\begin_inset Formula $B=U\Lambda U^{T}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Get 
+\begin_inset Formula $X=U\Lambda^{1/2},$
+\end_inset
+
+ restricting to a few best eigenvalues.
+ 
+\end_layout
+
+\begin_layout Standard
+In our case, since calculating distance matrix is expensive, we choose to
+ use only 20,000 observation from the data.
+ We then calculate the three largest eigenvalues, and the three corresponding
+ eigenvectors.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Implementation and relation of dimension reduction dataset with geography
+\end_layout
+
+\begin_layout Standard
+We plot the first eigen-dimension with respect to second eigen-dimension,
+ then the third eigen-dimension with respect to the second eigen-dimension
+ in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "v1_v2"
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Enumerate
+The top pair of plots depict the effect of first eigen-direction.
+ The left plot is the plot of location.
+ For the right plot, Y-axis is second eigen-dimension; X-axis is first eigen-dim
+ension.
+ We color the point with low value on first eigenvector dimension pink,
+ and see that they do not seem to locate particularly at any region in the
+ US.
+ We are not sure what this first eigen-dimension denotes.
+ It seems there are only a small group of people that are very different
+ from the rest of the people which are mainly on the right.
+ One hypothesis is maybe it has something to do with native English speaker
+ and non-native English speaker.
+ Most of the native speakers would agree on the same set of dialect, while
+ the few percentage of non-native speaker might not know the answer to many
+ of the question.
+ 
+\end_layout
+
+\begin_layout Enumerate
+The second pair of plots depict the effect of second eigen-direction.
+ Left plot is again the plot of location.
+ Right plot is also similar to top-pair, with Y-axis second eigen-dimension,
+ and Y-axis first eigen-dimension.
+ This time we see some interesting relation with geography.
+ We note that the black points correspond with the Southern part of the
+ US, while the top points correspond to the rest.
+ This dimension seems to highlight the difference in dialect of the Southern
+ part of the US.
+\end_layout
+
+\begin_layout Enumerate
+The third pair of plots depict the effect of third eigen-direction.
+ For the right plot, we have Y-axis is second eigen-direction, while X-axis
+ is third eigen-direction.
+ We see some interesting pattern, that is those with low third eigen-dimension
+ coordinate, they tend to locate in the Mid-west.
+ On the other hand those with high third eigen-dimension coordinate, they
+ tend to locate in the Northest, as seen in the fourth pair of plots.
+ This dimension seems to explain the difference in dialect between the Midwest
+ of the US with the rest.
+ 
+\end_layout
+
+\begin_layout Standard
+To better illustrate the relation between second eigen-dimension, third
+ eigen-dimension with geography, we create a video with more gradual transition
+ along each eigen-direction at 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://youtu.be/utRNDoQ1IUk
+\end_layout
+
+\end_inset
+
+.
+ In the video, the right plot also has the X-axis as third eigen-dimension,
+ and Y-axis as second eigen-dimension.
+ As we go along the third dimension, we see a gradual shift from the Midwest
+ to everywhere, then to the Northeast.
+ As we go along the second dimension, we see a gradual shift from the Southern
+ part, the go up to North and further West.
+ We also notice a couple things that make sense with our intuition, such
+ that the Northeast seems to be similar with the West Coast in term of dialect
+ they are speaking.
+ For the Southern part, those people who do not belong to the Southern cluster
+ as defined by second eigen-dimension tend to live in big cities for example
+ in Florida.
+ This also makes sense as urban area across the US tend to speak similarly.
+ 
+\end_layout
+
+\begin_layout Standard
+We also report the eigen-value corresponding to each dimension in the following
+ table.
+ 
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Formula $\begin{array}{ccccc}
+\text{Dimension} & \text{Eigenvalue} & \text{Possible Explaination}\\
+1 & 0.0216 & \text{Unknown}\\
+2 & 0.0159 & \text{Southern}\\
+3 & 0.0123 & \text{Midwest}\\
+\\
+\end{array}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The second eigen-dimension is more interesting, it seems to depict the Southern
+ and non-Southern direction.
+ People with low second eigen-dimension coordinate tend to locate in the
+ South part of the US, while the rest are located on Northeast and West
+ of US.
+ 
+\end_layout
+
+\begin_layout Standard
+The third eigen-dimension is equally interesting, it depicts the Midwest
+ and non-Midwest direction.
+ As we can see in Figure
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Box Doublebox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /Users/hd/Dropbox/School/ST215/Lab/lab2/map_v1_v2_v1.png
+	scale 50
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename /Users/hd/Dropbox/School/ST215/Lab/lab2/clu_v1_v2_v1
+	scale 50
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Graphics
+	filename /Users/hd/Dropbox/School/ST215/Lab/lab2/map_v1_v2_v2
+	scale 50
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename /Users/hd/Dropbox/School/ST215/Lab/lab2/clu_v1_v2_v2
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename map_v2_v3_v3
+	scale 50
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename clu_v2_v3_v3
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename map_v2_v3_v3.2
+	scale 50
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename clu_v2_v3_v3.2
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+First Dimension vs.
+ Second Dimension.
+ 
+\begin_inset Newline newline
+\end_inset
+
+Left Plots: People according to their location
+\begin_inset Newline newline
+\end_inset
+
+Right Plots: People according to the first eigenvalue (horizontal), and
+ second eigenvalue (vertical).
+\begin_inset Newline newline
+\end_inset
+
+Those with pink color on the right are the same with those with pink color
+ on the left.
+ 
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "v1_v2"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Property of the cluster
+\end_layout
+
+\begin_layout Standard
+We note that there is a continuum in the projection of data onto the first
+ few eigen-dimensions.
+ This migh be explained as US culture has mostly merged across the country.
+ There is no significant isolated group that speaks completely differently
+ from the rest.
+ This is a result of globalization.
+ This converging in culture or language is in contrast with the polarization
+ in US politics for example.
+ Data of US congressmen voting has shown that over the year congressmen
+ have been moving further apart.
+ Each party member votes for their own party, and rarely cross the line
+ to get things done.
+ As a result of no separated group in the data, we think it does not make
+ much sense to do clustering.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Contribution of each question to a Principal Component
+\end_layout
+
+\begin_layout Standard
+(Note that we use loosely the term principal component to denote the eigenvector
+s here)
+\end_layout
+
+\begin_layout Standard
+To investigate what question matter for which question, we consider the
+ matrix 
+\begin_inset Formula $U^{T}X,$
+\end_inset
+
+ for 
+\begin_inset Formula $U$
+\end_inset
+
+ is the eigenvector matrix obtained above, 
+\begin_inset Formula $X$
+\end_inset
+
+ is the binary matrix 
+\begin_inset Formula $46,242\times468$
+\end_inset
+
+.
+ (U should be 
+\begin_inset Formula $46242\times46242$
+\end_inset
+
+ but in our case we only calculate the three best eigen values, so U is
+ 
+\begin_inset Formula $46242\times3$
+\end_inset
+
+).
+ We get the resulting matrix Y with dimension 
+\begin_inset Formula $3\times468,$
+\end_inset
+
+ for each element 
+\begin_inset Formula $Y_{ij}$
+\end_inset
+
+ denote the contribution of that column j'th of 
+\begin_inset Formula $X$
+\end_inset
+
+ to the variance of the i'th principal component.
+ We aggregate this 
+\begin_inset Formula $Y$
+\end_inset
+
+ matrix into a 
+\begin_inset Formula $3\times67$
+\end_inset
+
+ matrix, which denote the contribution of each question to the i'th principal
+ component.
+ We plot the three row of this matrix on Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "question_weight"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Box Doublebox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename question_weight.png
+	scale 20
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Contribution of Each Question to Each of the Three Principal Components
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "question_weight"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For the first principal component has each question contribute equally to
+ the variance.
+ It could be this component captures the overall variance of the dataset.
+ For the second principal component (Southern vs non-Southern), we see some
+ questions contribute more weight than the other.
+ For example Question 50 of 
+\begin_inset Quotes eld
+\end_inset
+
+How you address a group of people
+\begin_inset Quotes erd
+\end_inset
+
+ has a high weight, as Southern people use 
+\begin_inset Quotes eld
+\end_inset
+
+y'all
+\begin_inset Quotes erd
+\end_inset
+
+, while the rest tend to use 
+\begin_inset Quotes eld
+\end_inset
+
+you guys
+\begin_inset Quotes erd
+\end_inset
+
+ or 
+\begin_inset Quotes eld
+\end_inset
+
+you
+\begin_inset Quotes erd
+\end_inset
+
+.
+ For the third principal (Midwest vs Northeast), we also see some question
+ contribute more than the other, for example whether one call 
+\begin_inset Quotes eld
+\end_inset
+
+sneakers
+\begin_inset Quotes erd
+\end_inset
+
+ or 
+\begin_inset Quotes eld
+\end_inset
+
+tennis shoes
+\begin_inset Quotes erd
+\end_inset
+
+.
+ The Northeast people tends to use 
+\begin_inset Quotes eld
+\end_inset
+
+sneakers
+\begin_inset Quotes erd
+\end_inset
+
+ while the rest uses 
+\begin_inset Quotes eld
+\end_inset
+
+tennis shoes
+\begin_inset Quotes erd
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Subsection
+Clustering
+\end_layout
+
+\begin_layout Standard
+Plotting the second and third principal component, we do not see separate
+ groups.
+ However, we will still attempt to perform a clustering on our data.
+ Everything in this subsection is based on the second and third principal
+ component, which we believe to relate to geography location (we ignore
+ the first principal component).
+ 
+\end_layout
+
+\begin_layout Standard
+We plot the k-mean clusters with k = 4 in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "kmean"
+
+\end_inset
+
+.
+ We also plot the cluster onto the US map.
+ We see that three major clusters, corresponding with the Southern, the
+ Northeast, and the Midwest and West.
+ The remaining cluster only have couple of members.
+ 
+\end_layout
+
+\begin_layout Standard
+With one more cluster, k = 5, we see one more geographic group emerges.
+ The Midwest and West cluster now is separated into two groups, one is around
+ Ohio, Indiana, while the other is further West.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Box Doublebox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename kmean.png
+	scale 17
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename kmean5.png
+	scale 17
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+K-Mean on Second and Third Principal Component
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "kmean"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Robustness and Stability of Finding
+\end_layout
+
+\begin_layout Standard
+As we see in subsection 3.4, changing the number of cluster does not change
+ the grouping completely.
+ For two clusters, it tries to separate the Northeast from the rest.
+ With three clusters, one small group of outliers appear.
+ With four group, the rest is separated into Southern part and the rest.
+ Then with five groups, the West and Midwest is separated into two groups.
+ We can see this effect in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "kmean_init"
+
+\end_inset
+
+ .
+ 
+\end_layout
+
+\begin_layout Standard
+We also try with different starting points, and find that the clustering
+ is stable, as seen in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "kmean_init"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Box Doublebox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename kmean_ncluster.png
+	scale 10
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename kmean_init.png
+	scale 10
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+K-mean 4 Clusters with Different Starting Point
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "kmean_init"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+It seems that k-mean on second and third principal components is stable.
+ 
+\end_layout
+
+\begin_layout Section
+Conclusion
+\end_layout
+
+\begin_layout Standard
+With our metric of distance, we were able to obtain the first three principal
+ components.
+ The first component seems to denote the overall variance of the population,
+ with no meaning on geographical location.
+ The second and third component on the other hand depict the difference
+ between different region of the US.
+ This confirms our belief that geography is still the main factor dividing
+ how people use English dialect.
+ However, the division is very continuous, suggesting that overall US culture
+ has been merging together.
+ 
+\end_layout
+
+\begin_layout Standard
+Possible further work to be done: 
+\end_layout
+
+\begin_layout Enumerate
+Find out the meaning of first component, and also research the less significant
+ components (4th, 5th, ...)
+\end_layout
+
+\begin_layout Enumerate
+We thought of a way to measure the difference in two question.
+ It is based on joint distribution of two categorical variable.
+ One can attempt to group the questions into cluster as well.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Computationally, the distance matrix was the bottleneck.
+ dist() function in R uses only one core, and is quite slow.
+ Also the memory usage is huge with 40,000 observation we will need 1.6 billion
+ data points each with 8 bytes.
+ One might need to work on efficient computation time, and efficient memory
+ for calculating distance
+\end_layout
+
+\begin_layout Standard
+REFERENCE
+\end_layout
+
+\begin_layout Standard
+Diaconis, P, Goel, S, Holmes, S.
+ 2008.
+ Horseshoes in Multidimensional Scaling and Local Kernel Methods.
+ 
+\end_layout
+
+\end_body
+\end_document
