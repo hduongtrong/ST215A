@@ -7,3 +7,7 @@
 *.R~
 *.zip
 .gitignore~
+*.png
+*.csv
+*.rda
+*trash*
