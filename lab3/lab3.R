@@ -1,13 +1,18 @@
 library(parallel)
 library(doParallel)
 library(foreach)
+library(rlecuyer)
 
-setwd("~/Dropbox/School/ST215/Lab/lab3/")
+# 0. Load Data and register Parallel
+setwd(dirname(sys.frame(1)$ofile))
+# setwd("~/Dropbox/School/ST215/Lab/lab3/")
 load("lingBinary.RData")
 data = data.matrix(lingBinary[,7:474])
-nCores <- 4
+#nCores <- 8
+nCores <- as.numeric(Sys.getenv('NSLOTS'))
 registerDoParallel(nCores)
 rm(lingBinary); gc()
+
 ################################################################
 # 1. Define Correlation Function of Two Clusters
 ################################################################
@@ -43,6 +48,8 @@ taskFun <- function(){
   mn <- mean(rnorm(10000000))
   return(mn)
 }
+
+RNGkind("L'Ecuyer-CMRG")
 out2 <- foreach(i = 1:100) %dopar% {
   cat('Starting ', i, 'th job.\n', sep = '') 
   outSub <- taskFun()
@@ -50,6 +57,7 @@ out2 <- foreach(i = 1:100) %dopar% {
   outSub # this will become part of the out object
 }
 
+RNGkind("L'Ecuyer-CMRG")
 out <- foreach(i = 1:100) %dopar% {
   cat('Starting ', i, 'th job.\n', sep = '')
   
