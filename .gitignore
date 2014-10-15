@@ -10,3 +10,4 @@
 *.csv
 *.rda
 *trash*
+*.sh.*
