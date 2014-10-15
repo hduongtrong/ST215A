@@ -4,8 +4,9 @@ library(foreach)
 library(rlecuyer)
 
 # 0. Load Data and register Parallel
-setwd(dirname(sys.frame(1)$ofile))
+setwd("~/Documents/ST215A/ST215A/lab3")
 # setwd("~/Dropbox/School/ST215/Lab/lab3/")
+
 load("lingBinary.RData")
 data = data.matrix(lingBinary[,7:474])
 #nCores <- 8
@@ -44,33 +45,23 @@ n = nrow(data); p = round(0.8*n)
 # Generate a vector of FALSE length n, and set 80% of them to
 # be true randomly
 
-taskFun <- function(){
-  mn <- mean(rnorm(10000000))
-  return(mn)
-}
-
 RNGkind("L'Ecuyer-CMRG")
-out2 <- foreach(i = 1:100) %dopar% {
-  cat('Starting ', i, 'th job.\n', sep = '') 
-  outSub <- taskFun()
-  cat('Finishing ', i, 'th job.\n', sep = '') 
-  outSub # this will become part of the out object
+out <- foreach(i = 2:16) %dopar% {
+  out.sm <- foreach(j = 1:500) %do% {
+    cat('Starting ', i, ".", j, 'th job.\n', sep = '')
+    
+    sub1 = rep(FALSE,n); sub1[sample.int(n, p)] <- TRUE
+    sub2 = rep(FALSE,n); sub2[sample.int(n, p)] <- TRUE
+    cl1 = kmeans(data[sub1,], centers = i)$cluster
+    cl2 = kmeans(data[sub2,], centers = i)$cluster
+    intersect = sub1 & sub2
+    cl1.intersect = cl1[intersect[sub1]]
+    cl2.intersect = cl2[intersect[sub2]]
+    
+    cat('Finishing ', i, ".", j, 'th job.\n', sep = '')
+    cluster.Corr(cl1.intersect,cl2.intersect)
+  }
+  unlist(out.sm)
 }
 
-RNGkind("L'Ecuyer-CMRG")
-out <- foreach(i = 1:100) %dopar% {
-  cat('Starting ', i, 'th job.\n', sep = '')
-  
-  sub1 = rep(FALSE,n); sub1[sample.int(n, p)] <- TRUE
-  sub2 = rep(FALSE,n); sub2[sample.int(n, p)] <- TRUE
-  cl1 = kmeans(data[sub1,], centers = 3)$cluster
-  cl2 = kmeans(data[sub2,], centers = 3)$cluster
-  intersect = sub1 & sub2
-  cl1.intersect = cl1[intersect[sub1]]
-  cl2.intersect = cl2[intersect[sub2]]
-  
-  cat('Finishing ', i, 'th job.\n', sep = '')
-  cluster.Corr(cl1.intersect,cl2.intersect)
-}
-
-
+save(out, file = "KMeanAccuracy5.RData")

@@ -1,0 +1,210 @@
+
+R version 3.1.1 (2014-07-10) -- "Sock it to Me"
+Copyright (C) 2014 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(parallel)
+> library(doParallel)
+Loading required package: foreach
+Loading required package: iterators
+> library(foreach)
+> library(rlecuyer)
+> 
+> # 0. Load Data and register Parallel
+> setwd("~/Documents/ST215A/ST215A/lab3")
+> # setwd("~/Dropbox/School/ST215/Lab/lab3/")
+> 
+> load("lingBinary.RData")
+> data = data.matrix(lingBinary[,7:474])
+> #nCores <- 8
+> nCores <- as.numeric(Sys.getenv('NSLOTS'))
+> registerDoParallel(nCores)
+> rm(lingBinary); gc()
+           used  (Mb) gc trigger  (Mb) max used  (Mb)
+Ncells   243421  13.1     467875  25.0   350000  18.7
+Vcells 21533633 164.3   47626274 363.4 46369198 353.8
+> 
+> ################################################################
+> # 1. Define Correlation Function of Two Clusters
+> ################################################################
+> cluster.Corr = function(cl1, cl2)
++ {
++   # correlation as suggested in Ben-Hur, Elisseeff, Guyon paper
++   # is always at least 1/k for k is the number of cluster in cl1 
++   # and cl2. To make the corr going from 0 to 1, we adjusted the 
++   # corr by substracting 1/k away, and rescale back. 
++   cor.raw = sum(table(cl1,cl2)^2)/sqrt(sum(table(cl1)^2))/
++     sqrt(sum(table(cl2)^2))
++   adj = 1/length(table(cl1))/length(table(cl2)); adj = sqrt(adj)
++   (cor.raw - adj)/(1-adj)
++ }
+> # A Function to test cluster.Cor, make sure it returns 0 
+> # correlation when assigning cluster randomly. 
+> MC = function(n=1000,k=3)
++ {
++   x = sample(1:k, n, replace=TRUE)
++   y = sample(1:k, n, replace=TRUE)
++   cluster.Corr(x,y)
++ }
+> # MC()
+> 
+> #################################################################
+> # 2. K-means Stability Test
+> #################################################################
+> n = nrow(data); p = round(0.8*n)
+> # Generate a vector of FALSE length n, and set 80% of them to
+> # be true randomly
+> 
+> RNGkind("L'Ecuyer-CMRG")
+> out <- foreach(i = 2:16) %dopar% {
++   out.sm <- foreach(j = 1:500) %do% {
++     cat('Starting ', i, ".", j, 'th job.\n', sep = '')
++     
++     sub1 = rep(FALSE,n); sub1[sample.int(n, p)] <- TRUE
++     sub2 = rep(FALSE,n); sub2[sample.int(n, p)] <- TRUE
++     cl1 = kmeans(data[sub1,], centers = i)$cluster
++     cl2 = kmeans(data[sub2,], centers = i)$cluster
++     intersect = sub1 & sub2
++     cl1.intersect = cl1[intersect[sub1]]
++     cl2.intersect = cl2[intersect[sub2]]
++     
++     cat('Finishing ', i, ".", j, 'th job.\n', sep = '')
++     cluster.Corr(cl1.intersect,cl2.intersect)
++   }
++   unlist(out.sm)
++ }
+Starting 3.1th job.
+Starting 2.1th job.
+Starting 5.1th job.
+Starting 4.1th job.
+Starting 7.1th job.
+Starting 8.1th job.
+Starting 9.1th job.
+Starting 6.1th job.
+Starting 11.1th job.
+Starting 14.1th job.
+Starting 16.1th job.
+Starting 10.1th job.
+Starting 13.1th job.
+Starting 12.1th job.
+Starting 15.1th job.
+Finishing 2.1th job.
+Starting 2.2th job.
+Finishing 2.2th job.
+Starting 2.3th job.
+Finishing 5.1th job.
+Starting 5.2th job.
+Finishing 2.3th job.
+Starting 2.4th job.
+Finishing 6.1th job.
+Starting 6.2th job.
+Finishing 2.4th job.
+Starting 2.5th job.
+Finishing 2.5th job.
+Starting 2.6th job.
+Finishing 3.1th job.
+Starting 3.2th job.
+Finishing 5.2th job.
+Starting 5.3th job.
+Finishing 2.6th job.
+Starting 2.7th job.
+Finishing 3.2th job.
+Starting 3.3th job.
+Finishing 2.7th job.
+Starting 2.8th job.
+Finishing 3.3th job.
+Starting 3.4th job.
+Finishing 8.1th job.
+Starting 8.2th job.
+Finishing 4.1th job.
+Starting 4.2th job.
+Finishing 6.2th job.
+Starting 6.3th job.
+Finishing 15.1th job.
+Finishing 12.1th job.
+Starting 15.2th job.
+Starting 12.2th job.
+Finishing 2.8th job.
+Starting 2.9th job.
+Finishing 14.1th job.
+Starting 14.2th job.
+Finishing 3.4th job.
+Starting 3.5th job.
+Finishing 5.3th job.
+Finishing 10.1th job.
+Starting 5.4th job.
+Starting 10.2th job.
+Finishing 7.1th job.
+Starting 7.2th job.
+Finishing 9.1th job.
+Starting 9.2th job.
+Finishing 2.9th job.
+Starting 2.10th job.
+Finishing 4.2th job.
+Starting 4.3th job.
+Finishing 13.1th job.
+Starting 13.2th job.
+Finishing 2.10th job.
+Starting 2.11th job.
+Finishing 3.5th job.
+Starting 3.6th job.
+Finishing 16.1th job.
+Starting 16.2th job.
+Finishing 6.3th job.
+Starting 6.4th job.
+Finishing 11.1th job.
+Starting 11.2th job.
+Finishing 2.11th job.
+Starting 2.12th job.
+Finishing 4.3th job.
+Starting 4.4th job.
+Finishing 8.2th job.
+Starting 8.3th job.
+Finishing 10.2th job.
+Starting 10.3th job.
+Finishing 3.6th job.
+Starting 3.7th job.
+Finishing 12.2th job.
+Starting 12.3th job.
+Finishing 2.12th job.
+Starting 2.13th job.
+Finishing 5.4th job.
+Starting 5.5th job.
+Finishing 3.7th job.
+Starting 3.8th job.
+Finishing 2.13th job.
+Starting 2.14th job.
+Finishing 2.14th job.
+Finishing 7.2th job.
+Starting 2.15th job.
+Starting 7.3th job.
+Finishing 3.8th job.
+Starting 3.9th job.
+Finishing 4.4th job.
+Starting 4.5th job.
+Finishing 15.2th job.
+Starting 15.3th job.
+Finishing 9.2th job.
+Starting 9.3th job.
+Finishing 2.15th job.
+Starting 2.16th job.
+Finishing 5.5th job.
+Starting 5.6th job.
+Finishing 3.9th job.
+Starting 3.10th job.
+Finishing 14.2th job.
+Starting 14.3th job.
+Finishing 6.4th job.
+Starting 6.5th job.

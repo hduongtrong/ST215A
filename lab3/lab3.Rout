@@ -1,0 +1,303 @@
+
+R version 3.0.2 (2013-09-25) -- "Frisbee Sailing"
+Copyright (C) 2013 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(parallel)
+> library(doParallel)
+Loading required package: foreach
+Loading required package: iterators
+> library(foreach)
+> library(rlecuyer)
+> 
+> # 0. Load Data and register Parallel
+> setwd("~/Documents/ST215A/ST215A/lab3")
+> # setwd("~/Dropbox/School/ST215/Lab/lab3/")
+> 
+> load("lingBinary.RData")
+> data = data.matrix(lingBinary[,7:474])
+> nCores <- 8
+> #nCores <- as.numeric(Sys.getenv('NSLOTS'))
+> registerDoParallel(nCores)
+> rm(lingBinary); gc()
+           used  (Mb) gc trigger (Mb) max used  (Mb)
+Ncells   245421  13.2     467875   25   350000  18.7
+Vcells 21521364 164.2   69069888  527 69051312 526.9
+> 
+> ################################################################
+> # 1. Define Correlation Function of Two Clusters
+> ################################################################
+> cluster.Corr = function(cl1, cl2)
++ {
++   # correlation as suggested in Ben-Hur, Elisseeff, Guyon paper
++   # is always at least 1/k for k is the number of cluster in cl1 
++   # and cl2. To make the corr going from 0 to 1, we adjusted the 
++   # corr by substracting 1/k away, and rescale back. 
++   cor.raw = sum(table(cl1,cl2)^2)/sqrt(sum(table(cl1)^2))/
++     sqrt(sum(table(cl2)^2))
++   adj = 1/length(table(cl1))/length(table(cl2)); adj = sqrt(adj)
++   (cor.raw - adj)/(1-adj)
++ }
+> # A Function to test cluster.Cor, make sure it returns 0 
+> # correlation when assigning cluster randomly. 
+> MC = function(n=1000,k=3)
++ {
++   x = sample(1:k, n, replace=TRUE)
++   y = sample(1:k, n, replace=TRUE)
++   cluster.Corr(x,y)
++ }
+> # MC()
+> 
+> #################################################################
+> # 2. K-means Stability Test
+> #################################################################
+> n = nrow(data); p = round(0.8*n)
+> # Generate a vector of FALSE length n, and set 80% of them to
+> # be true randomly
+> 
+> taskFun <- function(){
++   mn <- mean(rnorm(10000000))
++   return(mn)
++ }
+> 
+> RNGkind("L'Ecuyer-CMRG")
+> out2 <- foreach(i = 1:100) %dopar% {
++   cat('Starting ', i, 'th job.\n', sep = '') 
++   outSub <- taskFun()
++   cat('Finishing ', i, 'th job.\n', sep = '') 
++   outSub # this will become part of the out object
++ }
+Starting 1th job.
+Starting 2th job.
+Starting 3th job.
+Starting 4th job.
+Starting 5th job.
+Starting 6th job.
+Starting 7th job.
+Starting 8th job.
+Finishing 1th job.
+Starting 9th job.
+Finishing 3th job.
+Starting 11th job.
+Finishing 2th job.
+Starting 10th job.
+Finishing 4th job.
+Starting 12th job.
+Finishing 5th job.
+Starting 13th job.
+Finishing 8th job.
+Starting 16th job.
+Finishing 6th job.
+Starting 14th job.
+Finishing 7th job.
+Starting 15th job.
+Finishing 9th job.
+Starting 17th job.
+Finishing 11th job.
+Starting 19th job.
+Finishing 10th job.
+Starting 18th job.
+Finishing 16th job.
+Starting 21th job.
+Finishing 12th job.
+Starting 20th job.
+Finishing 14th job.
+Starting 22th job.
+Finishing 15th job.
+Starting 23th job.
+Finishing 17th job.
+Starting 25th job.
+Finishing 19th job.
+Starting 27th job.
+Finishing 18th job.
+Starting 26th job.
+Finishing 24th job.
+Starting 32th job.
+Finishing 21th job.
+Starting 29th job.
+Finishing 20th job.
+Starting 28th job.
+Finishing 22th job.
+Starting 30th job.
+Finishing 23th job.
+Starting 31th job.
+Finishing 25th job.
+Starting 33th job.
+Finishing 27th job.
+Starting 35th job.
+Finishing 26th job.
+Starting 34th job.
+Finishing 32th job.
+Starting 40th job.
+Finishing 29th job.
+Starting 37th job.
+Finishing 28th job.
+Starting 36th job.
+Finishing 30th job.
+Starting 38th job.
+Finishing 31th job.
+Starting 39th job.
+Finishing 33th job.
+Starting 41th job.
+Finishing 35th job.
+Starting 43th job.
+Finishing 34th job.
+Starting 42th job.
+Finishing 40th job.
+Starting 48th job.
+Finishing 37th job.
+Starting 45th job.
+Finishing 36th job.
+Starting 44th job.
+Finishing 38th job.
+Starting 46th job.
+Finishing 39th job.
+Starting 47th job.
+Finishing 41th job.
+Starting 49th job.
+Finishing 43th job.
+Starting 51th job.
+Finishing 42th job.
+Starting 50th job.
+Finishing 48th job.
+Starting 56th job.
+Finishing 45th job.
+Starting 53th job.
+Finishing 44th job.
+Starting 52th job.
+Finishing 46th job.
+Starting 54th job.
+Finishing 47th job.
+Starting 55th job.
+Finishing 49th job.
+Starting 57th job.
+Finishing 51th job.
+Starting 59th job.
+Finishing 50th job.
+Starting 58th job.
+Finishing 53th job.
+Starting 61th job.
+Finishing 56th job.
+Starting 64th job.
+Finishing 52th job.
+Starting 60th job.
+Finishing 54th job.
+Starting 62th job.
+Finishing 55th job.
+Starting 63th job.
+Finishing 57th job.
+Starting 65th job.
+Finishing 59th job.
+Starting 67th job.
+Finishing 58th job.
+Starting 66th job.
+Finishing 61th job.
+Starting 69th job.
+Finishing 64th job.
+Starting 72th job.
+Finishing 60th job.
+Starting 68th job.
+Finishing 62th job.
+Starting 70th job.
+Finishing 63th job.
+Starting 71th job.
+Finishing 65th job.
+Starting 73th job.
+Finishing 67th job.
+Starting 75th job.
+Finishing 66th job.
+Starting 74th job.
+Finishing 69th job.
+Starting 77th job.
+Finishing 72th job.
+Starting 80th job.
+Finishing 68th job.
+Starting 76th job.
+Finishing 70th job.
+Starting 78th job.
+Finishing 71th job.
+Starting 79th job.
+Finishing 73th job.
+Starting 81th job.
+Finishing 75th job.
+Starting 83th job.
+Finishing 74th job.
+Starting 82th job.
+Finishing 77th job.
+Starting 85th job.
+Finishing 76th job.
+Starting 84th job.
+Finishing 80th job.
+Starting 88th job.
+Finishing 78th job.
+Starting 86th job.
+Finishing 79th job.
+Starting 87th job.
+Finishing 81th job.
+Starting 89th job.
+Finishing 83th job.
+Starting 91th job.
+Finishing 82th job.
+Starting 90th job.
+Finishing 85th job.
+Starting 93th job.
+Finishing 84th job.
+Starting 92th job.
+Finishing 88th job.
+Starting 96th job.
+Finishing 86th job.
+Starting 94th job.
+Finishing 87th job.
+Starting 95th job.
+Finishing 89th job.
+Starting 97th job.
+Finishing 91th job.
+Starting 99th job.
+Finishing 90th job.
+Starting 98th job.
+Finishing 93th job.
+Finishing 92th job.
+Starting 100th job.
+Finishing 96th job.
+Finishing 94th job.
+Finishing 95th job.
+Finishing 97th job.
+Finishing 99th job.
+Finishing 98th job.
+Finishing 100th job.
+> 
+> RNGkind("L'Ecuyer-CMRG")
+> #out <- foreach(i = 1:100) %dopar% {
+> #  cat('Starting ', i, 'th job.\n', sep = '')
+> #  
+> #  sub1 = rep(FALSE,n); sub1[sample.int(n, p)] <- TRUE
+> #  sub2 = rep(FALSE,n); sub2[sample.int(n, p)] <- TRUE
+> #  cl1 = kmeans(data[sub1,], centers = 3)$cluster
+> #  cl2 = kmeans(data[sub2,], centers = 3)$cluster
+> #  intersect = sub1 & sub2
+> #  cl1.intersect = cl1[intersect[sub1]]
+> #  cl2.intersect = cl2[intersect[sub2]]
+> #  
+> #  cat('Finishing ', i, 'th job.\n', sep = '')
+> #  cluster.Corr(cl1.intersect,cl2.intersect)
+> #}
+> 
+> write.table(as.numeric(out2), file = "comeonedude.csv")
+> 
+> proc.time()
+   user  system elapsed 
+193.063   5.380  35.105 
