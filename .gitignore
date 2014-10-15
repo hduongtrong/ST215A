@@ -3,7 +3,6 @@
 *history
 *.txt
 *.swp
-*.RData
 *.R~
 *.zip
 .gitignore~
