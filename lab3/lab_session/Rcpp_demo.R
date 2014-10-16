@@ -1,17 +1,16 @@
 # Example usage of RCpp.
 
 library('Rcpp')
+library('RcppArmadillo')
 library('microbenchmark')
 
-working.directory <- file.path(Sys.getenv("GIT_REPO_LOC"),
-                               "classes/STAT215A_Fall2013/lab_sessions/",
-                               "10-07-2014_lab3/")
-
+working.directory <- "~/Dropbox/School/ST215/Lab/lab3/lab_session/"
 # Flags for openMP.  If you're not using openMP, you don't need these.
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
 
 sourceCpp(file.path(working.directory, 'Rcpp_demo.cpp'))
+sourceCpp(file.path(working.directory, 'FastDist.cpp'))
 
 x = rnorm(1e7)
 y = rnorm(1e7)
@@ -26,8 +25,8 @@ DistanceR <- function(x, y) {
 # openMP function to boot.
 microbenchmark(DistanceR(x, y),
                DistanceCPP(x, y),
-               DistanceMatrixCPP(z),
-               DistanceCPPParallel(x, y), times = 5)
+               DistanceMatrixCPP(z), times = 5)
+# DistanceCPPParallel(x, y),
 
 # All the answers are the same:
 DistanceCPP(x, y)

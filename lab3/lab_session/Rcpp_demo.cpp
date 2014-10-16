@@ -2,7 +2,7 @@
 // http://adv-r.had.co.nz/Rcpp.html
 
 #include <Rcpp.h>
-#include <omp.h>
+// #include <omp.h>
 
 // The line [[Rcpp::export]] before a function tells R to treat it like
 // a native function.
@@ -48,6 +48,7 @@ Rcpp::NumericVector DistanceMatrixCPP(Rcpp::NumericMatrix z) {
   return Rcpp::NumericVector::create(sqrt(result));
 }
 
+/*
 // [[Rcpp::export]]
 Rcpp::NumericVector  DistanceCPPParallel(Rcpp::NumericVector x, Rcpp::NumericVector y) {
   // Calculate the euclidian distance between <x> and <y>
@@ -74,3 +75,4 @@ Rcpp::NumericVector  DistanceCPPParallel(Rcpp::NumericVector x, Rcpp::NumericVec
 }
 
 
+*/

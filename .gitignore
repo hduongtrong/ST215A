@@ -11,3 +11,4 @@
 *.rda
 *trash*
 *.sh.*
+*.cpp~
