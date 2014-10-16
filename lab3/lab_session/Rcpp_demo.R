@@ -5,6 +5,7 @@ library('RcppArmadillo')
 library('microbenchmark')
 
 working.directory <- "~/Dropbox/School/ST215/Lab/lab3/lab_session/"
+working.directory <- "~/Dropbox/School/ST215/Lab/lab3/"
 # Flags for openMP.  If you're not using openMP, you don't need these.
 Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
