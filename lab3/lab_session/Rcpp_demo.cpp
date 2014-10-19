@@ -74,5 +74,12 @@ Rcpp::NumericVector  DistanceCPPParallel(Rcpp::NumericVector x, Rcpp::NumericVec
   return Rcpp::NumericVector::create(sqrt(result));
 }
 
-
+int chunk = 64
+#pragma omp parallel for \
+    shared(x, y, n)\
+    schedule(static, chunk)\
+    private(i)\
+    reduction(+:result)
+    for loop
+      result += 1
 */

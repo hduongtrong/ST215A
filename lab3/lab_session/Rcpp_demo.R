@@ -7,9 +7,11 @@ library('microbenchmark')
 working.directory <- "~/Dropbox/School/ST215/Lab/lab3/lab_session/"
 working.directory <- "~/Dropbox/School/ST215/Lab/lab3/"
 # Flags for openMP.  If you're not using openMP, you don't need these.
-Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
+# Sys.setenv("PKG_CXXFLAGS"="-fopenmp")
 Sys.setenv("PKG_LIBS"="-fopenmp")
-
+Sys.setenv("PKG_CXXFLAGS"="-I/path/ -fopenmp -I/Users/hd/Downloads/eigen-eigen-1306d75b4a21/")
+# 
+sourceCpp("/Users/hd/Documents/test2.cpp")
 sourceCpp(file.path(working.directory, 'Rcpp_demo.cpp'))
 sourceCpp(file.path(working.directory, 'FastDist.cpp'))
 
