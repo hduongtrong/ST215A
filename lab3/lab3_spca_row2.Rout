@@ -1,0 +1,78 @@
+
+R version 3.1.1 (2014-07-10) -- "Sock it to Me"
+Copyright (C) 2014 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(elasticnet)
+Loading required package: lars
+Loaded lars 1.2
+
+> library(RhpcBLASctl)
+> 
+> 
+> setwd("~/Documents/ST215A/ST215A/lab3")
+> # setwd("~/Dropbox/School/ST215/Lab/lab3/")
+> 
+> load("lingBinary.RData")
+> X = t(data.matrix(lingBinary[,7:474]))
+> #nCores <- 8
+> nCores <- as.numeric(Sys.getenv('NSLOTS'))
+> blas_set_num_threads(nCores)
+> rm(lingBinary); gc();
+           used  (Mb) gc trigger  (Mb) max used  (Mb)
+Ncells   235558  12.6     467875  25.0   350000  18.7
+Vcells 21525050 164.3   67462204 514.7 64023667 488.5
+> n = nrow(X); k = ncol(X)
+> 
+> D = matrix(,nrow=n,ncol=n)
+> D = 1-exp(-dist(X, method="manhattan")/k)
+> H = diag(rep(1,n))-matrix(1/n,n,n)
+> 
+> D = (-0.5)*H%*%as.matrix(D)%*%H/(n/2)
+> rm(H); rm(X); gc();
+         used (Mb) gc trigger  (Mb) max used  (Mb)
+Ncells 190788 10.2     467875  25.0   350000  18.7
+Vcells 523262  4.0   53969763 411.8 64023667 488.5
+> 
+> n.spar = round(n/5)
+> K = 20
+> out = spca(D, K = K, para = rep(n.spar,K), type="Gram", 
++            sparse = "varnum", trace=TRUE)
+iterations 10
+iterations 20
+iterations 30
+iterations 40
+iterations 50
+iterations 60
+iterations 70
+iterations 80
+iterations 90
+iterations 100
+iterations 110
+iterations 120
+iterations 130
+iterations 140
+iterations 150
+iterations 160
+iterations 170
+iterations 180
+iterations 190
+iterations 200
+> 
+> save(out, file = "PC1.RData")
+> 
+> proc.time()
+    user   system  elapsed 
+3220.700   10.010 3222.997 
