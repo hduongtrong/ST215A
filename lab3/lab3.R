@@ -2,22 +2,28 @@ library(parallel)
 library(doParallel)
 library(foreach)
 library(rlecuyer)
+library(microbenchmark)
+library(Rcpp)
+
 
 # 0. Load Data and register Parallel
-setwd("~/Documents/ST215A/ST215A/lab3")
-# setwd("~/Dropbox/School/ST215/Lab/lab3/")
+
+# working.directory = "~/Documents/ST215A/ST215A/lab3"
+# nCores <- as.numeric(Sys.getenv('NSLOTS'))
+working.directory = "~/Dropbox/School/ST215/Lab/lab3/"
+nCores <- 4
+setwd(working.directory)
+registerDoParallel(nCores)
 
 load("lingBinary.RData")
 data = data.matrix(lingBinary[,7:474])
-#nCores <- 8
-nCores <- as.numeric(Sys.getenv('NSLOTS'))
-registerDoParallel(nCores)
 rm(lingBinary); gc()
 
 ################################################################
 # 1. Define Correlation Function of Two Clusters
 ################################################################
-cluster.Corr = function(cl1, cl2)
+# 1.1. R's version
+cluster.CorR = function(cl1, cl2)
 {
   # correlation as suggested in Ben-Hur, Elisseeff, Guyon paper
   # is always at least 1/k for k is the number of cluster in cl1 
@@ -28,15 +34,42 @@ cluster.Corr = function(cl1, cl2)
   adj = 1/length(table(cl1))/length(table(cl2)); adj = sqrt(adj)
   (cor.raw - adj)/(1-adj)
 }
+
+cluster.CorR2 = function(cl1, cl2)
+{
+  # Calculate the table function only once.
+  joint.dist = table(cl1, cl2)
+  cor.raw = sum(joint.dist^2)/sqrt(sum(rowSums(joint.dist)^2))/
+  sqrt(sum(colSums(joint.dist)^2))
+  adj = 1/nrow(joint.dist)/ncol(joint.dist); adj = sqrt(adj)
+  (cor.raw - adj)/(1-adj)
+}
+
+# A third function to calculate Correlation using 
+# table function written in C++
+sourceCpp(file.path(working.directory, 'table.cpp'))
+cluster.CorCPP = function(cl1, cl2, k)
+{
+	joint.dist = tableCPP(cl1, cl2, k)
+    cor.raw = sum(joint.dist^2)/sqrt(sum(rowSums(joint.dist)^2))/
+    sqrt(sum(colSums(joint.dist)^2))
+    adj = 1/nrow(joint.dist)/ncol(joint.dist); adj = sqrt(adj)
+    (cor.raw - adj)/(1-adj)
+}
+
 # A Function to test cluster.Cor, make sure it returns 0 
 # correlation when assigning cluster randomly. 
-MC = function(n=1000,k=3)
+MC = function(n=1e6,k=3)
 {
   x = sample(1:k, n, replace=TRUE)
   y = sample(1:k, n, replace=TRUE)
-  cluster.Corr(x,y)
+  print(system.time(cluster.CorR(x,y)))
+  print(system.time(cluster.CorR2(x,y)))
+  print(system.time(cluster.CorCPP(x,y,k)))
 }
 # MC()
+
+# 1.2. C++ version
 
 #################################################################
 # 2. K-means Stability Test
