@@ -1,0 +1,51 @@
+
+R version 3.1.1 (2014-07-10) -- "Sock it to Me"
+Copyright (C) 2014 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(rARPACK)
+> library(RhpcBLASctl)
+> 
+> 
+> setwd("~/Documents/ST215A/ST215A/lab3")
+> # setwd("~/Dropbox/School/ST215/Lab/lab3/")
+> 
+> load("lingBinary.RData")
+> X = (data.matrix(lingBinary[,7:474]))
+> #nCores <- 8
+> nCores <- as.numeric(Sys.getenv('NSLOTS'))
+> blas_set_num_threads(nCores)
+> rm(lingBinary); gc();
+           used  (Mb) gc trigger  (Mb) max used  (Mb)
+Ncells  1153799  61.7    1835812  98.1  1265230  67.6
+Vcells 22845133 174.3   49075104 374.5 47462961 362.2
+> n = round(nrow(X)); k = ncol(X)
+> 
+> D = matrix(,nrow=n,ncol=n)
+> D = 1-exp(-dist(X[1:n,], method="manhattan")/134)
+> H = diag(rep(1,n))-matrix(1/n,n,n)
+> 
+> D = (-0.5)*H%*%as.matrix(D)%*%H/(n/2)
+> rm(H); rm(X); gc();
+             used    (Mb) gc trigger    (Mb)   max used    (Mb)
+Ncells    1108726    59.3    1835812    98.1    1265230    67.6
+Vcells 2040326903 15566.5 8561576833 65319.7 9706697423 74056.3
+> 
+> out = eigs_sym(D,5)
+> save(out, file = "PC2.RData")
+> 
+> proc.time()
+     user    system   elapsed 
+59780.765   401.285 12075.812 

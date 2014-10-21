@@ -1,0 +1,415 @@
+
+R version 3.1.1 (2014-07-10) -- "Sock it to Me"
+Copyright (C) 2014 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(parallel)
+> library(doParallel)
+Loading required package: foreach
+Loading required package: iterators
+> library(foreach)
+> library(rlecuyer)
+> library(microbenchmark)
+> library(Rcpp)
+> library(ggplot2)
+> library(gridExtra)
+Loading required package: grid
+> 
+> # 0. Load Data and register Parallel
+> 
+> working.directory = "~/Documents/ST215A/ST215A/lab3"
+> # nCores <- as.numeric(Sys.getenv('NSLOTS'))
+> # working.directory = "~/Dropbox/School/ST215/Lab/lab3/"
+> nCores <- 16
+> setwd(working.directory)
+> registerDoParallel(nCores)
+> 
+> load("PC2.RData")
+> data = sqrt(out$values)*out$vectors
+> 
+> args=(commandArgs(TRUE))
+> for(i in 1:length(args))
++ {
++   eval(parse(text=args[[i]]))
++ }
+> 
+> ################################################################
+> # 1. Define Correlation Function of Two Clusters
+> ################################################################
+> # R's version
+> cluster.CorR = function(cl1, cl2)
++ {
++   # correlation as suggested in Ben-Hur, Elisseeff, Guyon paper
++   # is always at least 1/k for k is the number of cluster in cl1 
++   # and cl2. To make the corr going from 0 to 1, we adjusted the 
++   # corr by substracting 1/k away, and rescale back. 
++   cor.raw = sum(table(cl1,cl2)^2)/sqrt(sum(table(cl1)^2))/
++     sqrt(sum(table(cl2)^2))
++   adj = 1/length(table(cl1))/length(table(cl2)); adj = sqrt(adj)
++   (cor.raw - adj)/(1-adj)
++ }
+> 
+> # R's version improved. Calculate the Table only once
+> cluster.CorR2 = function(cl1, cl2)
++ {
++   # Calculate the table function only once.
++   joint.dist = table(cl1, cl2)
++   cor.raw = sum(joint.dist^2)/sqrt(sum(rowSums(joint.dist)^2))/
++   sqrt(sum(colSums(joint.dist)^2))
++   adj = 1/nrow(joint.dist)/ncol(joint.dist); adj = sqrt(adj)
++   (cor.raw - adj)/(1-adj)
++ }
+> 
+> # A third function to calculate Correlation using 
+> # table function written in C++. Note that this table function 
+> # only works in our specific case where elements are natural 
+> # numbers starting from 1 (the cluster vector).
+> sourceCpp(file.path(working.directory, 'table.cpp'))
+> cluster.CorCPP = function(cl1, cl2, k)
++ {
++ 	joint.dist = tableCPP(cl1, cl2, k)
++     cor.raw = sum(joint.dist^2)/sqrt(sum(rowSums(joint.dist)^2))/
++     sqrt(sum(colSums(joint.dist)^2))
++     adj = 1/nrow(joint.dist)/ncol(joint.dist); adj = sqrt(adj)
++     (cor.raw - adj)/(1-adj)
++ }
+> 
+> # A Function to test cluster.Cor, make sure it returns 0 
+> # correlation when assigning cluster randomly. 
+> MC = function(n=1e6,k=3)
++ {
++   x = sample(1:k, n, replace=TRUE)
++   y = sample(1:k, n, replace=TRUE)
++   print(system.time(cluster.CorR(x,y)))
++   print(system.time(cluster.CorR2(x,y)))
++   print(system.time(cluster.CorCPP(x,y,k)))
++ }
+> # MC()
+> 
+> #################################################################
+> # 2. K-means Stability Test
+> #################################################################
+> n = nrow(data); p = round(0.8*n)
+> # Generate a vector of FALSE length n,], and set 80% of them to
+> # be true randomly
+> # Please set the size of outer loop and inner loop accordingly
+> # to your machine's power. This setting was used on the SCF 
+> # Cluster. 
+> RNGkind("L'Ecuyer-CMRG")
+> #out <- foreach(i = 2:16) %dopar% {
+>   out <- foreach(j = 1:128) %dopar% {
++     cat('Starting ', i, ".", j, 'th job.\n', sep = '')
++     
++     sub1 = rep(FALSE,n); sub1[sample.int(n, p)] <- TRUE
++     sub2 = rep(FALSE,n); sub2[sample.int(n, p)] <- TRUE
++     cl1 = kmeans(data[sub1,], centers = i)$cluster
++     cl2 = kmeans(data[sub2,], centers = i)$cluster
++     intersect = sub1 & sub2
++     cl1.intersect = cl1[intersect[sub1]]
++     cl2.intersect = cl2[intersect[sub2]]
++     
++     cat('Finishing ', i, ".", j, 'th job.\n', sep = '')
++     cluster.CorCPP(cl1.intersect,cl2.intersect, i)
++   }
+Starting 3.1th job.
+Starting 3.2th job.
+Starting 3.4th job.
+Starting 3.6th job.
+Starting 3.8th job.
+Starting 3.3th job.
+Starting 3.10th job.
+Starting 3.12th job.
+Starting 3.7th job.
+Starting Starting 3.9th job.
+3.5th job.
+Starting 3.13th job.
+Starting 3.14th job.
+Starting 3.11th job.
+Starting 3.16th job.
+Starting 3.15th job.
+Finishing 3.12th job.
+Starting 3.28th job.
+Finishing 3.16th job.
+Starting 3.32th job.
+Finishing 3.5th job.
+Starting 3.21th job.
+Finishing 3.3th job.
+Starting 3.19th job.
+Finishing 3.8th job.
+Starting 3.24th job.
+Finishing 3.1th job.
+Starting 3.17th job.
+Finishing 3.10th job.
+Starting 3.26th job.
+Finishing 3.6th job.
+Starting 3.22th job.
+Finishing 3.2th job.
+Starting 3.18th job.
+Finishing 3.7th job.
+Starting 3.23th job.
+Finishing 3.11th job.
+Starting 3.27th job.
+Finishing 3.13th job.
+Starting 3.29th job.
+Finishing 3.32th job.
+Starting 3.48th job.
+Finishing 3.4th job.
+Starting 3.20th job.
+Finishing 3.15th job.
+Starting 3.31th job.
+Finishing 3.9th job.
+Starting 3.25th job.
+Finishing 3.14th job.
+Starting 3.30th job.
+Finishing 3.28th job.
+Starting 3.44th job.
+Finishing 3.17th job.
+Starting 3.33th job.
+Finishing 3.22th job.
+Starting 3.38th job.
+Finishing 3.18th job.
+Starting 3.34th job.
+Finishing 3.27th job.
+Starting 3.43th job.
+Finishing 3.23th job.
+Starting 3.39th job.
+Finishing 3.19th job.
+Starting 3.35th job.
+Finishing 3.26th job.
+Starting 3.42th job.
+Finishing 3.24th job.
+Starting 3.40th job.
+Finishing 3.21th job.
+Starting 3.37th job.
+Finishing 3.25th job.
+Starting 3.41th job.
+Finishing 3.20th job.
+Starting 3.36th job.
+Finishing 3.48th job.
+Starting 3.64th job.
+Finishing 3.29th job.
+Starting 3.45th job.
+Finishing 3.44th job.
+Starting 3.60th job.
+Finishing 3.31th job.
+Starting 3.47th job.
+Finishing 3.35th job.
+Starting 3.51th job.
+Finishing 3.38th job.
+Starting 3.54th job.
+Finishing 3.33th job.
+Starting 3.49th job.
+Finishing 3.43th job.
+Starting 3.59th job.
+Finishing 3.30th job.
+Starting 3.46th job.
+Finishing 3.36th job.
+Starting 3.52th job.
+Finishing 3.42th job.
+Starting 3.58th job.
+Finishing 3.39th job.
+Finishing 3.34th job.
+Starting 3.55th job.
+Starting 3.50th job.
+Finishing 3.41th job.
+Starting 3.57th job.
+Finishing 3.54th job.
+Starting 3.70th job.
+Finishing 3.37th job.
+Starting 3.53th job.
+Finishing 3.45th job.
+Starting 3.61th job.
+Finishing 3.40th job.
+Starting 3.56th job.
+Finishing 3.47th job.
+Starting 3.63th job.
+Finishing 3.59th job.
+Starting 3.75th job.
+Finishing 3.64th job.
+Starting 3.80th job.
+Finishing 3.60th job.
+Starting 3.76th job.
+Finishing 3.51th job.
+Starting 3.67th job.
+Finishing 3.49th job.
+Starting 3.65th job.
+Finishing 3.46th job.
+Starting 3.62th job.
+Finishing 3.70th job.
+Starting 3.86th job.
+Finishing 3.52th job.
+Starting 3.68th job.
+Finishing 3.58th job.
+Starting 3.74th job.
+Finishing 3.50th job.
+Starting 3.66th job.
+Finishing 3.55th job.
+Starting 3.71th job.
+Finishing 3.76th job.
+Starting 3.92th job.
+Finishing 3.67th job.
+Starting 3.83th job.
+Finishing 3.75th job.
+Starting 3.91th job.
+Finishing 3.61th job.
+Starting 3.77th job.
+Finishing 3.63th job.
+Starting 3.79th job.
+Finishing 3.80th job.
+Starting 3.96th job.
+Finishing 3.53th job.
+Starting 3.69th job.
+Finishing 3.65th job.
+Starting 3.81th job.
+Finishing 3.57th job.
+Starting 3.73th job.
+Finishing 3.56th job.
+Starting 3.72th job.
+Finishing 3.74th job.
+Starting 3.90th job.
+Finishing 3.68th job.
+Starting 3.84th job.
+Finishing 3.62th job.
+Starting 3.78th job.
+Finishing 3.71th job.
+Starting 3.87th job.
+Finishing 3.92th job.
+Starting 3.108th job.
+Finishing 3.77th job.
+Starting 3.93th job.
+Finishing 3.86th job.
+Starting 3.102th job.
+Finishing 3.91th job.
+Starting 3.107th job.
+Finishing 3.79th job.
+Starting 3.95th job.
+Finishing 3.66th job.
+Starting 3.82th job.
+Finishing 3.83th job.
+Starting 3.99th job.
+Finishing 3.69th job.
+Starting 3.85th job.
+Finishing 3.72th job.
+Starting 3.88th job.
+Finishing 3.73th job.
+Starting 3.89th job.
+Finishing 3.108th job.
+Finishing 3.78th job.
+Starting 3.124th job.
+Starting 3.94th job.
+Finishing 3.102th job.
+Starting 3.118th job.
+Finishing 3.81th job.
+Starting 3.97th job.
+Finishing 3.107th job.
+Finishing 3.90th job.
+Starting 3.106th job.
+Starting 3.123th job.
+Finishing 3.87th job.
+Starting 3.103th job.
+Finishing 3.84th job.
+Starting 3.100th job.
+Finishing 3.96th job.
+Starting 3.112th job.
+Finishing 3.82th job.
+Starting 3.98th job.
+Finishing 3.93th job.
+Starting 3.109th job.
+Finishing 3.85th job.
+Starting 3.101th job.
+Finishing 3.95th job.
+Starting 3.111th job.
+Finishing 3.89th job.
+Starting 3.105th job.
+Finishing 3.88th job.
+Starting 3.104th job.
+Finishing 3.100th job.
+Starting 3.116th job.
+Finishing 3.112th job.
+Starting 3.128th job.
+Finishing 3.124th job.
+Finishing 3.106th job.
+Starting 3.122th job.
+Finishing 3.101th job.
+Finishing 3.94th job.
+Starting 3.110th job.
+Finishing 3.103th job.
+Starting 3.117th job.
+Starting 3.119th job.
+Finishing 3.97th job.
+Starting 3.113th job.
+Finishing 3.123th job.
+Finishing 3.99th job.
+Starting 3.115th job.
+Finishing 3.118th job.
+Finishing 3.111th job.
+Starting 3.127th job.
+Finishing 3.105th job.
+Starting 3.121th job.
+Finishing 3.98th job.
+Starting 3.114th job.
+Finishing 3.109th job.
+Starting 3.125th job.
+Finishing 3.116th job.
+Finishing 3.110th job.
+Starting 3.126th job.
+Finishing 3.104th job.
+Finishing 3.117th job.
+Starting 3.120th job.
+Finishing 3.127th job.
+Finishing 3.113th job.
+Finishing 3.115th job.
+Finishing 3.119th job.
+Finishing 3.122th job.
+Finishing 3.125th job.
+Finishing 3.114th job.
+Finishing 3.128th job.
+Finishing 3.126th job.
+Finishing 3.121th job.
+Finishing 3.120th job.
+> #  unlist(out.sm)
+> #}
+> out = unlist(out)
+> print(out)
+  [1] 0.47650285 0.46331332 0.79658736 0.17833510 0.79017726 0.99449667
+  [7] 0.49554646 0.82186811 0.30443635 0.98726809 0.85304819 0.94690653
+ [13] 0.78870343 0.79925454 0.94913884 0.82415062 0.98853220 0.81392188
+ [19] 0.77472100 0.82576756 0.76511184 0.95302492 0.98184264 0.79304890
+ [25] 0.98532849 0.32029802 0.80286573 0.99001751 0.13010154 0.78015704
+ [31] 0.79223738 0.76801762 0.80123931 0.79641812 0.50387968 0.79627730
+ [37] 0.80832708 0.76806109 0.33560489 0.31886987 0.99039827 0.81779483
+ [43] 0.78969463 0.79469287 0.04334922 0.29282286 0.78620166 0.98062848
+ [49] 0.22981886 0.94759431 0.98830514 0.78173602 0.98981823 0.98992517
+ [55] 0.98204358 0.85768298 0.78687256 0.95228171 0.53745776 0.38214323
+ [61] 0.06591396 0.82375857 0.85439570 0.91939199 0.81388222 0.86040947
+ [67] 0.24932213 0.72289802 0.31501592 0.81760864 0.19328550 0.97316376
+ [73] 0.95701130 0.91963552 0.71461334 0.46239968 0.82616166 0.44256325
+ [79] 0.95247590 0.99200548 0.80332403 0.80353993 0.99574377 0.80300478
+ [85] 0.77564324 0.80327760 0.94819267 0.82502834 0.79972970 0.97109735
+ [91] 0.20604056 0.96404036 0.80002017 0.77471617 0.83914579 0.77532240
+ [97] 0.92155902 0.77960524 0.30531765 0.51522932 0.80969895 0.82784846
+[103] 0.78428796 0.82303518 0.16252984 0.50928248 0.96284511 0.99047791
+[109] 0.29846001 0.78662688 0.79829451 0.83672522 0.51413877 0.82875647
+[115] 0.51956856 0.82274742 0.82100772 0.78683791 0.77863136 0.79872735
+[121] 0.04431516 0.83340737 0.99233044 0.94914717 0.51405467 0.82302363
+[127] 0.79334376 0.77593226
+> save(out, file = paste("KMean",i,".RData", sep="")
++ #save(out, file = "Kmean3.RData")
++ 
+> proc.time()
+   user  system elapsed 
+ 51.866   4.413  12.935 

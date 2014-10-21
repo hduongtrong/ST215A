@@ -1,0 +1,2653 @@
+
+R version 3.1.1 (2014-07-10) -- "Sock it to Me"
+Copyright (C) 2014 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(parallel)
+> library(doParallel)
+Loading required package: foreach
+Loading required package: iterators
+> library(foreach)
+> library(rlecuyer)
+> library(microbenchmark)
+> library(Rcpp)
+> library(ggplot2)
+> library(gridExtra)
+Loading required package: grid
+> 
+> # 0. Load Data and register Parallel
+> 
+> working.directory = "~/Documents/ST215A/ST215A/lab3"
+> nCores <- as.numeric(Sys.getenv('NSLOTS'))
+> # working.directory = "~/Dropbox/School/ST215/Lab/lab3/"
+> # nCores <- 16
+> setwd(working.directory)
+> registerDoParallel(nCores)
+> 
+> load("PC2.RData")
+> data = sqrt(out$values)*out$vectors
+> 
+> # args=(commandArgs(TRUE))
+> # for(i in 1:length(args))
+> # {
+> #   eval(parse(text=args[[i]]))
+> # }
+> 
+> ################################################################
+> # 1. Define Correlation Function of Two Clusters
+> ################################################################
+> # R's version
+> cluster.CorR = function(cl1, cl2)
++ {
++   # correlation as suggested in Ben-Hur, Elisseeff, Guyon paper
++   # is always at least 1/k for k is the number of cluster in cl1 
++   # and cl2. To make the corr going from 0 to 1, we adjusted the 
++   # corr by substracting 1/k away, and rescale back. 
++   cor.raw = sum(table(cl1,cl2)^2)/sqrt(sum(table(cl1)^2))/
++     sqrt(sum(table(cl2)^2))
++   adj = 1/length(table(cl1))/length(table(cl2)); adj = sqrt(adj)
++   (cor.raw - adj)/(1-adj)
++ }
+> 
+> # R's version improved. Calculate the Table only once
+> cluster.CorR2 = function(cl1, cl2)
++ {
++   # Calculate the table function only once.
++   joint.dist = table(cl1, cl2)
++   cor.raw = sum(joint.dist^2)/sqrt(sum(rowSums(joint.dist)^2))/
++   sqrt(sum(colSums(joint.dist)^2))
++   adj = 1/nrow(joint.dist)/ncol(joint.dist); adj = sqrt(adj)
++   (cor.raw - adj)/(1-adj)
++ }
+> 
+> # A third function to calculate Correlation using 
+> # table function written in C++. Note that this table function 
+> # only works in our specific case where elements are natural 
+> # numbers starting from 1 (the cluster vector).
+> sourceCpp(file.path(working.directory, 'table.cpp'))
+> cluster.CorCPP = function(cl1, cl2, k)
++ {
++ 	joint.dist = tableCPP(cl1, cl2, k)
++     cor.raw = sum(joint.dist^2)/sqrt(sum(rowSums(joint.dist)^2))/
++     sqrt(sum(colSums(joint.dist)^2))
++     adj = 1/nrow(joint.dist)/ncol(joint.dist); adj = sqrt(adj)
++     (cor.raw - adj)/(1-adj)
++ }
+> 
+> # A Function to test cluster.Cor, make sure it returns 0 
+> # correlation when assigning cluster randomly. 
+> MC = function(n=1e6,k=3)
++ {
++   x = sample(1:k, n, replace=TRUE)
++   y = sample(1:k, n, replace=TRUE)
++   print(system.time(cluster.CorR(x,y)))
++   print(system.time(cluster.CorR2(x,y)))
++   print(system.time(cluster.CorCPP(x,y,k)))
++ }
+> # MC()
+> 
+> #################################################################
+> # 2. K-means Stability Test
+> #################################################################
+> n = nrow(data); p = round(0.8*n)
+> # Generate a vector of FALSE length n,], and set 80% of them to
+> # be true randomly
+> # Please set the size of outer loop and inner loop accordingly
+> # to your machine's power. This setting was used on the SCF 
+> # Cluster. 
+> RNGkind("L'Ecuyer-CMRG")
+> out <- foreach(i = 2:10) %do% {
++   out.sm <- foreach(j = 1:128) %dopar% {
++     cat('Starting ', i, ".", j, 'th job.\n', sep = '')
++     
++     sub1 = rep(FALSE,n); sub1[sample.int(n, p)] <- TRUE
++     sub2 = rep(FALSE,n); sub2[sample.int(n, p)] <- TRUE
++     cl1 = kmeans(data[sub1,], centers = i)$cluster
++     cl2 = kmeans(data[sub2,], centers = i)$cluster
++     intersect = sub1 & sub2
++     cl1.intersect = cl1[intersect[sub1]]
++     cl2.intersect = cl2[intersect[sub2]]
++     
++     cat('Finishing ', i, ".", j, 'th job.\n', sep = '')
++     cluster.CorCPP(cl1.intersect,cl2.intersect, i)
++   }
++   unlist(out.sm)
++ }
+Starting 2.1th job.
+Starting 2.3th job.
+Starting 2.2th job.
+Starting 2.5th job.
+Starting 2.4th job.
+Starting 2.16th job.
+Starting 2.6th job.
+Starting 2.7th job.
+Starting 2.8th job.
+Starting 2.10th job.
+2.9th job.
+Starting 2.11th job.
+Starting 2.12th job.
+Starting 2.13th job.
+Starting 2.17th job.
+Starting 2.14th job.
+Starting 2.18th job.
+Starting 2.20th job.
+Starting 2.19th job.
+Starting 2.22th job.
+2.15th job.
+Starting 2.21th job.
+Starting 2.23th job.
+Starting 2.24th job.
+Starting 2.26th job.
+Starting 2.28th job.
+Starting 2.25th job.
+Starting 2.30th job.
+Starting 2.27th job.
+Starting 2.29th job.
+Starting 2.31th job.
+Starting 2.32th job.
+Finishing 2.16th job.
+Starting 2.48th job.
+Finishing 2.48th job.
+Starting 2.80th job.
+Finishing 2.32th job.
+Starting 2.64th job.
+Finishing 2.80th job.
+Starting 2.112th job.
+Finishing 2.64th job.
+Starting 2.96th job.
+Finishing 2.96th job.
+Starting 2.128th job.
+Finishing 2.5th job.
+Starting 2.37th job.
+Finishing 2.128th job.
+Finishing 2.26th job.
+Starting 2.58th job.
+Finishing 2.24th job.
+Starting 2.56th job.
+Finishing 2.37th job.
+Starting 2.69th job.
+Finishing 2.69th job.
+Starting 2.101th job.
+Finishing 2.56th job.
+Starting 2.88th job.
+Finishing 2.58th job.
+Starting 2.90th job.
+Finishing 2.101th job.
+Finishing 2.90th job.
+Starting 2.122th job.
+Finishing 2.88th job.
+Starting 2.120th job.
+Finishing 2.122th job.
+Finishing 2.1th job.
+Starting 2.33th job.
+Finishing 2.6th job.
+Starting 2.38th job.
+Finishing 2.12th job.
+Starting 2.44th job.
+Finishing 2.120th job.
+Finishing 2.38th job.
+Starting 2.70th job.
+Finishing 2.33th job.
+Starting 2.65th job.
+Finishing 2.44th job.
+Starting 2.76th job.
+Finishing 2.70th job.
+Starting 2.102th job.
+Finishing 2.65th job.
+Starting 2.97th job.
+Finishing 2.17th job.
+Starting 2.49th job.
+Finishing 2.102th job.
+Finishing 2.76th job.
+Starting 2.108th job.
+Finishing 2.Finishing 2.97th job.
+2.29th job.
+Starting 2.61th job.
+Finishing 2.108th job.
+Finishing 2.49th job.
+Starting 2.81th job.
+Finishing 2.11th job.
+Starting 2.43th job.
+Finishing 2.22th job.
+Starting 2.54th job.
+Finishing 2.7th job.
+Starting 2.39th job.
+Finishing 2.10th job.
+Starting 2.42th job.
+Finishing 2.81th job.
+Starting 2.113th job.
+Finishing 2.61th job.
+Starting 2.93th job.
+Finishing 2.54th job.
+Starting 2.86th job.
+Finishing 2.3th job.
+Starting 2.35th job.
+Finishing 2.113th job.
+Finishing 2.43th job.
+Starting 2.75th job.
+Finishing 2.30th job.
+Starting 2.62th job.
+Finishing 2.39th job.
+Starting 2.71th job.
+Finishing 2.42th job.
+Starting 2.74th job.
+Finishing 2.93th job.
+Finishing 2.86th job.
+Starting 2.125th job.
+Starting 2.118th job.
+Finishing 2.71th job.
+Starting 2.103th job.
+Finishing 2.74th job.
+Starting 2.106th job.
+Finishing 2.125th job.
+Finishing 2.75th job.
+Starting 2.107th job.
+Finishing 2.9th job.
+Starting 2.41th job.
+Finishing Finishing 2.28th job.
+Starting 2.60th job.
+Finishing 2.118th job.
+2.20th job.
+Starting 2.52th job.
+Finishing 2.103th job.
+Finishing 2.15th job.
+Starting 2.47th job.
+Finishing 2.27th job.
+Starting 2.59th job.
+Finishing 2.107th job.
+Finishing 2.14th job.
+Starting 2.46th job.
+Finishing 2.106th job.
+Finishing 2.59th job.
+Starting 2.91th job.
+Finishing 2.41th job.
+Starting 2.73th job.
+Finishing 2.73th job.
+Starting 2.105th job.
+Finishing 2.91th job.
+Starting 2.123th job.
+Finishing 2.23th job.
+Starting 2.55th job.
+Finishing 2.2th job.
+Starting 2.34th job.
+Finishing 2.105th job.
+Finishing 2.25th job.
+Starting 2.57th job.
+Finishing 2.62th job.
+Starting 2.94th job.
+Finishing 2.123th job.
+Finishing 2.19th job.
+Finishing 2.55th job.
+Starting 2.87th job.
+Starting 2.51th job.
+Finishing 2.57th job.
+Starting 2.89th job.
+Finishing 2.8th job.
+Finishing 2.13th job.
+Starting 2.40th job.
+Finishing 2.89th job.
+Starting 2.45th job.
+Starting 2.121th job.
+Finishing 2.87th job.
+Starting 2.119th job.
+Finishing 2.35th job.
+Starting 2.67th job.
+Finishing 2.4th job.
+Starting 2.36th job.
+Finishing 2.60th job.
+Starting 2.92th job.
+Finishing 2.119th job.
+Finishing 2.121th job.
+Finishing 2.18th job.
+Starting 2.50th job.
+Finishing 2.52th job.
+Starting 2.84th job.
+Finishing 2.31th job.
+Starting 2.63th job.
+Finishing 2.21th job.
+Starting 2.53th job.
+Finishing 2.47th job.
+Starting 2.79th job.
+Finishing 2.94th job.
+Finishing 2.45th job.
+Starting 2.77th job.
+Starting 2.126th job.
+Finishing 2.84th job.
+Starting 2.116th job.
+Finishing 2.46th job.
+Starting 2.78th job.
+Finishing 2.53th job.
+Starting 2.85th job.
+Finishing 2.92th job.
+Finishing 2.40th job.
+Starting 2.72th job.
+Starting 2.124th job.
+Finishing 2.72th job.
+Starting 2.104th job.
+Finishing 2.124th job.
+Finishing 2.67th job.
+Starting 2.99th job.
+Finishing 2.116th job.
+Finishing 2.78th job.
+Starting 2.110th job.
+Finishing 2.77th job.
+Starting 2.109th job.
+Finishing 2.85th job.
+Starting 2.117th job.
+Finishing 2.104th job.
+Finishing 2.99th job.
+Finishing 2.126th job.
+Finishing 2.50th job.
+Starting 2.82th job.
+Finishing 2.79th job.
+Starting 2.111th job.
+Finishing 2.36th job.
+Starting 2.68th job.
+Finishing 2.34th job.
+Starting 2.66th job.
+Finishing 2.110th job.
+Finishing 2.109th job.
+Finishing 2.117th job.
+Finishing 2.63th job.
+Starting 2.95th job.
+Finishing 2.111th job.
+Finishing 2.51th job.
+Starting 2.83th job.
+Finishing 2.83th job.
+Finishing 2.68th job.
+Starting 2.115th job.
+Starting 2.100th job.
+Finishing 2.95th job.
+Starting 2.127th job.
+Finishing 2.66th job.
+Starting 2.98th job.
+Finishing 2.82th job.
+Starting 2.114th job.
+Finishing 2.100th job.
+Finishing 2.127th job.
+Finishing 2.115th job.
+Finishing 2.114th job.
+Finishing 2.98th job.
+Starting 3.1th job.
+Starting 3.2th job.
+Starting 3.3th job.
+Starting 3.4th job.
+Starting 3.5th job.
+Starting 3.6th job.
+Starting 3.7th job.
+Starting 3.8th job.
+Starting 3.10th job.
+Starting 3.9th job.
+Starting 3.11th job.
+Starting 3.19th job.
+Starting 3.14th job.
+Starting 3.20th job.
+Starting 3.15th job.
+Starting 3.22th job.
+Starting 3.12th job.
+Starting 3.13th job.
+Starting 3.16th job.
+Starting 3.24th job.
+Starting 3.17th job.
+Starting Starting 3.18th job.
+Starting 3.29th job.
+Starting 3.21th job.
+th job.
+Starting 3.23th job.
+Starting 3.26th job.
+Starting 3.27th job.
+Starting 3.30th job.
+Starting 3.31th job.
+Finishing 3.2th job.
+Starting 3.34th job.
+Finishing 3.6th job.
+Starting 3.38th job.
+Finishing 3.29th job.
+Starting 3.61th job.
+Finishing 3.7th job.
+Starting 3.39th job.
+Finishing 3.34th job.
+Starting 3.66th job.
+Finishing 3.61th job.
+Starting 3.93th job.
+Finishing 3.38th job.
+Starting 3.70th job.
+Finishing 3.21th job.
+Starting 3.53th job.
+Finishing 3.66th job.
+Starting 3.98th job.
+Finishing 3.14th job.
+Starting 3.46th job.
+Finishing 3.70th job.
+Starting 3.102th job.
+Finishing 3.93th job.
+Starting 3.125th job.
+Finishing 3.98th job.
+Finishing 3.12th job.
+Finishing 3.39th job.
+Starting 3.71th job.
+Finishing 3.5th job.
+Starting 3.44th job.
+Starting 3.37th job.
+Finishing 3.27th job.
+Starting 3.59th job.
+Finishing 3.102th job.
+Finishing 3.53th job.
+Starting 3.85th job.
+Finishing 3.125th job.
+Finishing 3.1th job.
+Starting 3.33th job.
+Finishing 3.3th job.
+Starting 3.35th job.
+Finishing 3.46th job.
+Starting 3.78th job.
+Finishing 3.85th job.
+Starting 3.117th job.
+Finishing 3.37th job.
+Starting 3.69th job.
+Finishing 3.71th job.
+Starting 3.103th job.
+Finishing 3.25th job.
+Starting 3.57th job.
+Finishing 3.78th job.
+Starting 3.110th job.
+Finishing 3.33th job.
+Starting 3.65th job.
+Finishing 3.17th job.
+Starting 3.49th job.
+Finishing 3.22th job.
+Starting 3.54th job.
+Finishing 3.69th job.
+Starting 3.101th job.
+Finishing 3.10th job.
+Finishing 3.30th job.
+Starting 3.62th job.
+Starting 3.42th job.
+Finishing 3.4th job.
+Starting 3.36th job.
+Finishing 3.110th job.
+Finishing 3.32th job.
+Starting 3.64th job.
+Finishing 3.31th job.
+Starting 3.63th job.
+Finishing 3.11th job.
+Starting 3.43th job.
+Finishing 3.62th job.
+Starting 3.94th job.
+Finishing 3.59th job.
+Starting 3.91th job.
+Finishing 3.15th job.
+Starting 3.47th job.
+Finishing 3.28th job.
+Starting 3.60th job.
+Finishing 3.18th job.
+Starting 3.50th job.
+Finishing 3.117th job.
+Finishing 3.26th job.
+Starting 3.58th job.
+Finishing 3.60th job.
+Starting 3.92th job.
+Finishing 3.49th job.
+Starting 3.81th job.
+Finishing 3.50th job.
+Starting 3.82th job.
+Finishing 3.47th job.
+Starting 3.79th job.
+Finishing 3.94th job.
+Starting 3.126th job.
+Finishing 3.101th job.
+Finishing 3.65th job.
+Starting 3.97th job.
+Finishing 3.58th job.
+Starting 3.90th job.
+Finishing 3.57th job.
+Starting 3.89th job.
+Finishing 3.44th job.
+Starting 3.76th job.
+Finishing 3.82th job.
+Starting 3.114th job.
+Finishing 3.103th job.
+Finishing 3.90th job.
+Starting 3.122th job.
+Finishing 3.126th job.
+Finishing 3.92th job.
+Starting 3.124th job.
+Finishing 3.97th job.
+Finishing 3.36th job.
+Starting 3.68th job.
+Finishing 3.114th job.
+Finishing 3.76th job.
+Starting 3.108th job.
+Finishing 3.122th job.
+Finishing 3.35th job.
+Starting 3.67th job.
+Finishing 3.23th job.
+Starting 3.55th job.
+Finishing 3.124th job.
+Finishing 3.81th job.
+Starting 3.113th job.
+Finishing 3.9th job.
+Starting 3.41th job.
+Finishing 3.63th job.
+Starting 3.95th job.
+Finishing 3.91th job.
+Starting 3.123th job.
+Finishing 3.20th job.
+Starting 3.52th job.
+Finishing 3.79th job.
+Starting 3.111th job.
+Finishing 3.108th job.
+Finishing 3.16th job.
+Starting 3.48th job.
+Finishing 3.95th job.
+Starting 3.127th job.
+Finishing 3.67th job.
+Starting 3.99th job.
+Finishing 3.123th job.
+Finishing 3.113th job.
+Finishing 3.8th job.
+Starting 3.40th job.
+Finishing 3.19th job.
+Starting 3.51th job.
+Finishing 3.111th job.
+Finishing 3.54th job.
+Starting 3.86th job.
+Finishing 3.99th job.
+Finishing 3.52th job.
+Starting 3.84th job.
+Finishing 3.13th job.
+Starting 3.45th job.
+Finishing 3.127th job.
+Finishing 3.64th job.
+Starting 3.96th job.
+Finishing 3.68th job.
+Starting 3.100th job.
+Finishing 3.55th job.
+Starting 3.87th job.
+Finishing 3.42th job.
+Starting 3.74th job.
+Finishing 3.89th job.
+Starting 3.121th job.
+Finishing 3.86th job.
+Starting 3.118th job.
+Finishing 3.43th job.
+Starting 3.75th job.
+Finishing 3.74th job.
+Starting 3.106th job.
+Finishing 3.96th job.
+Finishing 3.87th job.
+Starting 3.119th job.
+Starting 3.128th job.
+Finishing 3.40th job.
+Starting 3.72th job.
+Finishing 3.121th job.
+Finishing 3.84th job.
+Starting 3.116th job.
+Finishing 3.51th job.
+Starting 3.83th job.
+Finishing 3.75th job.
+Starting 3.107th job.
+Finishing 3.100th job.
+Finishing 3.118th job.
+Finishing 3.24th job.
+Starting 3.56th job.
+Finishing 3.106th job.
+Finishing 3.41th job.
+Starting 3.73th job.
+Finishing 3.116th job.
+Finishing 3.128th job.
+Finishing 3.119th job.
+Finishing 3.72th job.
+Starting 3.104th job.
+Finishing 3.45th job.
+Starting 3.77th job.
+Finishing 3.83th job.
+Starting 3.115th job.
+Finishing 3.48th job.
+Starting 3.80th job.
+Finishing 3.107th job.
+Finishing 3.115th job.
+Finishing 3.73th job.
+Starting 3.105th job.
+Finishing 3.104th job.
+Finishing 3.77th job.
+Starting 3.109th job.
+Finishing 3.80th job.
+Starting 3.112th job.
+Finishing 3.56th job.
+Starting 3.88th job.
+Finishing 3.105th job.
+Finishing 3.109th job.
+Finishing 3.88th job.
+Starting 3.120th job.
+Finishing 3.112th job.
+Finishing 3.120th job.
+Starting 4.1th job.
+Starting 4.3th job.
+Starting 4.2th job.
+Starting 4.4th job.
+Starting 4.5th job.
+Starting 4.6th job.
+Starting 4.8th job.
+Starting 4.9th job.
+Starting 4.10th job.
+Starting 4.11th job.
+Starting Starting 4.12th job.
+Starting 4.14th job.
+Starting 4.16th job.
+4.13th job.
+Starting 4.15th job.
+Starting 4.17th job.
+Starting 4.20th job.
+Starting 4.21th job.
+Starting 4.24th job.
+Starting 4.18th job.
+Starting 4.19th job.
+Starting 4.25th job.
+Starting 4.22th job.
+Starting 4.23th job.
+Starting 4.27th job.
+Starting 4.26th job.
+Starting 4.29th job.
+Starting 4.28th job.
+Starting 4.30th job.
+Starting 4.31th job.
+Starting 4.32th job.
+Finishing 4.18th job.
+Starting 4.50th job.
+Finishing 4.4th job.
+Starting 4.36th job.
+Finishing 4.11th job.
+Starting 4.43th job.
+Finishing 4.50th job.
+Starting 4.82th job.
+Finishing 4.43th job.
+Starting 4.75th job.
+Finishing 4.36th job.
+Starting 4.68th job.
+Finishing 4.82th job.
+Starting 4.114th job.
+Finishing 4.8th job.
+Starting 4.40th job.
+Finishing 4.17th job.
+Starting 4.49th job.
+Finishing 4.16th job.
+Starting 4.48th job.
+Finishing 4.68th job.
+Starting 4.100th job.
+Finishing 4.114th job.
+Finishing 4.40th job.
+Starting 4.72th job.
+Finishing 4.6th job.
+Starting 4.38th job.
+Finishing 4.23th job.
+Starting 4.55th job.
+Finishing 4.1th job.
+Starting 4.33th job.
+Finishing 4.9th job.
+Starting 4.41th job.
+Finishing 4.28th job.
+Starting 4.60th job.
+Finishing 4.27th job.
+Starting 4.59th job.
+Finishing 4.2th job.
+Starting 4.34th job.
+Finishing 4.10th job.
+Starting 4.42th job.
+Finishing 4.31th job.
+Finishing 4.24th job.
+Starting 4.63th job.
+Starting 4.56th job.
+Finishing 4.22th job.
+Starting 4.54th job.
+Finishing 4.34th job.
+Starting 4.66th job.
+Finishing 4.42th job.
+Starting 4.74th job.
+Finishing 4.41th job.
+Starting 4.73th job.
+Finishing 4.56th job.
+Starting 4.88th job.
+Finishing 4.25th job.
+Starting 4.57th job.
+Finishing 4.20th job.
+Starting 4.52th job.
+Finishing 4.60th job.
+Starting 4.92th job.
+Finishing 4.54th job.
+Starting 4.86th job.
+Finishing 4.19th job.
+Starting 4.51th job.
+Finishing 4.59th job.
+Starting 4.91th job.
+Finishing 4.75th job.
+Starting 4.107th job.
+Finishing 4.66th job.
+Starting 4.98th job.
+Finishing 4.57th job.
+Starting 4.89th job.
+Finishing 4.15th job.
+Starting 4.47th job.
+Finishing 4.52th job.
+Starting 4.84th job.
+Finishing 4.88th job.
+Finishing 4.72th job.
+Starting 4.120th job.
+Starting 4.104th job.
+Finishing 4.92th job.
+Starting 4.124th job.
+Finishing 4.55th job.
+Starting 4.87th job.
+Finishing 4.51th job.
+Starting 4.83th job.
+Finishing 4.48th job.
+Starting 4.80th job.
+Finishing 4.91th job.
+Starting 4.123th job.
+Finishing 4.32th job.
+Starting 4.64th job.
+Finishing 4.107th job.
+Finishing 4.30th job.
+Finishing 4.89th job.
+Starting 4.121th job.
+Starting 4.62th job.
+Finishing 4.83th job.
+Starting 4.115th job.
+Finishing 4.38th job.
+Starting 4.70th job.
+Finishing 4.124th job.
+Finishing 4.33th job.
+Starting 4.65th job.
+Finishing 4.121th job.
+Finishing 4.120th job.
+Finishing 4.49th job.
+Starting 4.81th job.
+Finishing 4.100th job.
+Finishing 4.74th job.
+Finishing 4.115th job.
+Starting 4.106th job.
+Finishing 4.123th job.
+Finishing 4.21th job.
+Starting 4.53th job.
+Finishing 4.84th job.
+Starting 4.116th job.
+Finishing 4.106th job.
+Finishing 4.29th job.
+Starting 4.61th job.
+Finishing 4.65th job.
+Starting 4.97th job.
+Finishing 4.98th job.
+Finishing 4.81th job.
+Starting 4.113th job.
+Finishing 4.3th job.
+Starting 4.35th job.
+Finishing 4.116th job.
+Finishing 4.53th job.
+Starting 4.85th job.
+Finishing 4.61th job.
+Starting 4.93th job.
+Finishing 4.104th job.
+Finishing 4.13th job.
+Starting 4.45th job.
+Finishing 4.47th job.
+Starting 4.79th job.
+Finishing 4.73th job.
+Starting 4.105th job.
+Finishing 4.86th job.
+Starting 4.118th job.
+Finishing 4.64th job.
+Starting 4.96th job.
+Finishing 4.85th job.
+Starting 4.117th job.
+Finishing 4.5th job.
+Starting 4.37th job.
+Finishing 4.97th job.
+Finishing 4.87th job.
+Starting 4.119th job.
+Finishing 4.35th job.
+Starting 4.67th job.
+Finishing 4.93th job.
+Starting 4.125th job.
+Finishing 4.96th job.
+Starting 4.128th job.
+Finishing 4.80th job.
+Starting 4.112th job.
+Finishing 4.63th job.
+Starting 4.95th job.
+Finishing 4.67th job.
+Starting 4.99th job.
+Finishing 4.125th job.
+Finishing 4.119th job.
+Finishing 4.128th job.
+Finishing 4.95th job.
+Starting 4.127th job.
+Finishing 4.118th job.
+Finishing 4.117th job.
+Finishing 4.14th job.
+Starting 4.46th job.
+Finishing 4.112th job.
+Finishing 4.99th job.
+Finishing 4.70th job.
+Starting 4.102th job.
+Finishing 4.113th job.
+Finishing 4.12th job.
+Starting 4.44th job.
+Finishing 4.7th job.
+Starting 4.39th job.
+Finishing 4.62th job.
+Starting 4.94th job.
+Finishing 4.127th job.
+Finishing 4.26th job.
+Starting 4.58th job.
+Finishing 4.46th job.
+Starting 4.78th job.
+Finishing 4.102th job.
+Finishing 4.94th job.
+Starting 4.126th job.
+Finishing 4.105th job.
+Finishing 4.78th job.
+Starting 4.110th job.
+Finishing 4.126th job.
+Finishing 4.45th job.
+Starting 4.77th job.
+Finishing 4.37th job.
+Starting 4.69th job.
+Finishing 4.77th job.
+Starting 4.109th job.
+Finishing 4.79th job.
+Starting 4.111th job.
+Finishing 4.69th job.
+Starting 4.101th job.
+Finishing 4.109th job.
+Finishing 4.110th job.
+Finishing 4.58th job.
+Starting 4.90th job.
+Finishing 4.111th job.
+Finishing 4.44th job.
+Starting 4.76th job.
+Finishing 4.39th job.
+Starting 4.71th job.
+Finishing 4.90th job.
+Starting 4.122th job.
+Finishing 4.76th job.
+Starting 4.108th job.
+Finishing 4.122th job.
+Finishing 4.71th job.
+Starting 4.103th job.
+Finishing 4.101th job.
+Finishing 4.108th job.
+Finishing 4.103th job.
+Starting 5.1th job.
+Starting 5.2th job.
+Starting 5.4th job.
+Starting 5.3th job.
+Starting 5.5th job.
+Starting 5.6th job.
+Starting 5.7th job.
+Starting 5.8th job.
+Starting 5.10th job.
+Starting 5.26th job.
+Starting 5.9th job.
+th job.
+Starting 5.28th job.
+Starting 5.29th job.
+Starting 5.12th job.
+Starting 5.30th job.
+5.15th job.
+Starting 5.13th job.
+Starting 5.14th job.
+Starting 5.32th job.
+Starting 5.16th job.
+Starting 5.18th job.
+Starting 5.19th job.
+Starting 5.22th job.
+Starting 5.17th job.
+Starting 5.20th job.
+Starting 5.21th job.
+Starting 5.23th job.
+Starting 5.24th job.
+Starting 5.25th job.
+Finishing 5.4th job.
+Starting 5.36th job.
+Finishing 5.36th job.
+Starting 5.68th job.
+Finishing 5.27th job.
+Starting 5.59th job.
+Finishing 5.68th job.
+Starting 5.100th job.
+Finishing 5.59th job.
+Starting 5.91th job.
+Finishing 5.100th job.
+Finishing 5.91th job.
+Starting 5.123th job.
+Finishing 5.13th job.
+Starting 5.45th job.
+Finishing 5.123th job.
+Finishing 5.29th job.
+Starting 5.61th job.
+Finishing 5.14th job.
+Starting 5.46th job.
+Finishing 5.45th job.
+Starting 5.77th job.
+Finishing 5.30th job.
+Starting 5.62th job.
+Finishing 5.2th job.
+Starting 5.34th job.
+Finishing 5.19th job.
+Starting 5.51th job.
+Finishing 5.26th job.
+Starting 5.58th job.
+Finishing 5.24th job.
+Starting 5.56th job.
+Finishing 5.34th job.
+Starting 5.66th job.
+Finishing 5.62th job.
+Starting 5.94th job.
+Finishing 5.56th job.
+Starting 5.88th job.
+Finishing 5.18th job.
+Starting 5.50th job.
+Finishing 5.12th job.
+Starting 5.44th job.
+Finishing 5.61th job.
+Starting 5.93th job.
+Finishing 5.58th job.
+Starting 5.90th job.
+Finishing 5.46th job.
+Starting 5.78th job.
+Finishing 5.77th job.
+Starting 5.109th job.
+Finishing 5.32th job.
+Starting 5.64th job.
+Finishing 5.17th job.
+Starting 5.49th job.
+Finishing 5.109th job.
+Finishing 5.90th job.
+Starting 5.122th job.
+Finishing 5.93th job.
+Starting 5.125th job.
+Finishing 5.7th job.
+Starting 5.39th job.
+Finishing 5.31th job.
+Starting 5.63th job.
+Finishing 5.23th job.
+Starting 5.55th job.
+Finishing 5.64th job.
+Starting 5.96th job.
+Finishing 5.22th job.
+Starting 5.54th job.
+Finishing 5.39th job.
+Starting 5.71th job.
+Finishing 5.96th job.
+Starting 5.128th job.
+Finishing 5.122th job.
+Finishing 5.78th job.
+Starting 5.110th job.
+Finishing 5.51th job.
+Starting 5.83th job.
+Finishing 5.3th job.
+Starting 5.35th job.
+Finishing 5.94th job.
+Starting 5.126th job.
+Finishing 5.44th job.
+Starting 5.76th job.
+Finishing 5.71th job.
+Starting 5.103th job.
+Finishing 5.128th job.
+Finishing 5.110th job.
+Finishing 5.125th job.
+Finishing 5.20th job.
+Finishing 5.126th job.
+Starting 5.52th job.
+Finishing 5.76th job.
+Starting 5.108th job.
+Finishing 5.83th job.
+Starting 5.115th job.
+Finishing 5.5th job.
+Starting 5.37th job.
+Finishing 5.49th job.
+Starting 5.81th job.
+Finishing 5.6th job.
+Starting 5.38th job.
+Finishing 5.103th job.
+Finishing 5.11th job.
+Finishing 5.115th job.
+Finishing 5.66th job.
+Starting 5.98th job.
+Starting 5.43th job.
+Finishing 5.108th job.
+Finishing 5.28th job.
+Finishing 5.15th job.
+Starting 5.47th job.
+Starting 5.60th job.
+Finishing 5.52th job.
+Starting 5.84th job.
+Finishing 5.50th job.
+Starting 5.82th job.
+Finishing 5.54th job.
+Starting 5.86th job.
+Finishing 5.38th job.
+Starting 5.70th job.
+Finishing 5.37th job.
+Starting 5.69th job.
+Finishing 5.35th job.
+Starting 5.67th job.
+Finishing 5.88th job.
+Starting 5.120th job.
+Finishing 5.98th job.
+Finishing 5.63th job.
+Starting 5.95th job.
+Finishing 5.55th job.
+Starting 5.87th job.
+Finishing 5.84th job.
+Starting 5.116th job.
+Finishing 5.69th job.
+Starting 5.101th job.
+Finishing 5.70th job.
+Starting 5.102th job.
+Finishing 5.95th job.
+Starting 5.127th job.
+Finishing 5.86th job.
+Starting 5.118th job.
+Finishing 5.120th job.
+Finishing 5.87th job.
+Starting 5.119th job.
+Finishing 5.82th job.
+Starting 5.114th job.
+Finishing 5.116th job.
+Finishing 5.101th job.
+Finishing 5.47th job.
+Starting 5.79th job.
+Finishing 5.67th job.
+Starting 5.99th job.
+Finishing 5.127th job.
+Finishing 5.119th job.
+Finishing 5.102th job.
+Finishing 5.118th job.
+Finishing 5.114th job.
+Finishing 5.21th job.
+Starting 5.53th job.
+Finishing 5.79th job.
+Starting 5.111th job.
+Finishing 5.25th job.
+Starting 5.57th job.
+Finishing 5.99th job.
+Finishing 5.16th job.
+Starting 5.48th job.
+Finishing 5.60th job.
+Starting 5.92th job.
+Finishing 5.81th job.
+Starting 5.113th job.
+Finishing 5.8th job.
+Starting 5.40th job.
+Finishing 5.9th job.
+Starting 5.41th job.
+Finishing 5.111th job.
+Finishing 5.92th job.
+Starting 5.124th job.
+Finishing 5.53th job.
+Starting 5.85th job.
+Finishing 5.113th job.
+Finishing 5.10th job.
+Starting 5.42th job.
+Finishing 5.48th job.
+Starting 5.80th job.
+Finishing 5.124th job.
+Finishing 5.43th job.
+Starting 5.75th job.
+Finishing 5.41th job.
+Starting 5.73th job.
+Finishing 5.1th job.
+Starting 5.33th job.
+Finishing 5.85th job.
+Starting 5.117th job.
+Finishing 5.80th job.
+Starting 5.112th job.
+Finishing 5.40th job.
+Starting 5.72th job.
+Finishing 5.33th job.
+Starting 5.65th job.
+Finishing 5.75th job.
+Starting 5.107th job.
+Finishing 5.73th job.
+Starting 5.105th job.
+Finishing 5.117th job.
+Finishing 5.57th job.
+Starting 5.89th job.
+Finishing 5.42th job.
+Starting 5.74th job.
+Finishing 5.112th job.
+Finishing 5.105th job.
+Finishing 5.65th job.
+Starting 5.97th job.
+Finishing 5.107th job.
+Finishing 5.74th job.
+Starting 5.106th job.
+Finishing 5.72th job.
+Starting 5.104th job.
+Finishing 5.97th job.
+Finishing 5.106th job.
+Finishing 5.89th job.
+Starting 5.121th job.
+Finishing 5.104th job.
+Finishing 5.121th job.
+Starting 6.2th job.
+Starting 6.1th job.
+Starting 6.4th job.
+Starting 6.3th job.
+Starting 6.12th job.
+Starting 6.13th job.
+Starting 6.10th job.
+Starting 6.7th job.
+Starting 6.9th job.
+Starting 6.8th job.
+Starting 6.16th job.
+Starting 6.11th job.
+Starting 6.17th job.
+Starting 6.18th job.
+Starting 6.19th job.
+Starting 6.23th job.
+Starting 6.24th job.
+Starting 6.20th job.
+Starting 6.26th job.
+Starting 6.21th job.
+Starting 6.22th job.
+Starting 6.27th job.
+Starting 6.25th job.
+Starting 6.30th job.
+Starting 6.28th job.
+Starting 6.29th job.
+Starting 6.31th job.
+Starting 6.32th job.
+Finishing 6.4th job.
+Starting 6.36th job.
+Finishing 6.10th job.
+Starting 6.42th job.
+Finishing 6.36th job.
+Starting 6.68th job.
+Finishing 6.13th job.
+Starting 6.45th job.
+Finishing 6.12th job.
+Starting 6.44th job.
+Finishing 6.68th job.
+Starting 6.100th job.
+Finishing 6.21th job.
+Starting 6.53th job.
+Finishing 6.17th job.
+Starting 6.49th job.
+Finishing 6.44th job.
+Starting 6.76th job.
+Finishing 6.45th job.
+Starting 6.77th job.
+Finishing 6.3th job.
+Starting 6.35th job.
+Finishing 6.20th job.
+Starting 6.52th job.
+Finishing 6.16th job.
+Starting 6.48th job.
+Finishing 6.76th job.
+Starting 6.108th job.
+Finishing 6.35th job.
+Starting 6.67th job.
+Finishing 6.7th job.
+Starting 6.39th job.
+Finishing 6.30th job.
+Starting 6.62th job.
+Finishing 6.18th job.
+Starting 6.50th job.
+Finishing 6.48th job.
+Starting 6.80th job.
+Finishing 6.77th job.
+Starting 6.109th job.
+Finishing 6.24th job.
+Starting 6.56th job.
+Finishing 6.23th job.
+Starting 6.55th job.
+Finishing 6.52th job.
+Starting 6.84th job.
+Finishing 6.42th job.
+Starting 6.74th job.
+Finishing 6.67th job.
+Starting 6.99th job.
+Finishing 6.26th job.
+Starting 6.58th job.
+Finishing 6.80th job.
+Starting 6.112th job.
+Finishing 6.49th job.
+Starting 6.81th job.
+Finishing 6.25th job.
+Starting 6.57th job.
+Finishing 6.31th job.
+Starting 6.63th job.
+Finishing 6.100th job.
+Finishing 6.58th job.
+Starting 6.90th job.
+Finishing 6.15th job.
+Starting 6.47th job.
+Finishing 6.84th job.
+Starting 6.116th job.
+Finishing 6.57th job.
+Starting 6.89th job.
+Finishing 6.112th job.
+Finishing 6.62th job.
+Starting 6.94th job.
+Finishing 6.74th job.
+Starting 6.106th job.
+Finishing 6.56th job.
+Starting 6.88th job.
+Finishing 6.2th job.
+Starting 6.34th job.
+Finishing 6.63th job.
+Starting 6.95th job.
+Finishing 6.32th job.
+Starting 6.64th job.
+Finishing 6.8th job.
+Starting 6.40th job.
+Finishing 6.109th job.
+Finishing 6.55th job.
+Starting 6.87th job.
+Finishing 6.108th job.
+Finishing 6.1th job.
+Starting 6.33th job.
+Finishing 6.6th job.
+Starting 6.38th job.
+Finishing 6.27th job.
+Starting 6.59th job.
+Finishing 6.29th job.
+Starting 6.61th job.
+Finishing 6.106th job.
+Finishing 6.88th job.
+Starting 6.120th job.
+Finishing 6.22th job.
+Starting 6.54th job.
+Finishing 6.9th job.
+Starting 6.41th job.
+Finishing 6.19th job.
+Starting 6.51th job.
+Finishing 6.87th job.
+Starting 6.119th job.
+Finishing 6.5th job.
+Starting 6.37th job.
+Finishing 6.28th job.
+Starting 6.60th job.
+Finishing 6.47th job.
+Starting 6.79th job.
+Finishing 6.33th job.
+Starting 6.65th job.
+Finishing 6.53th job.
+Starting 6.85th job.
+Finishing 6.61th job.
+Starting 6.93th job.
+Finishing 6.34th job.
+Starting 6.66th job.
+Finishing 6.95th job.
+Starting 6.127th job.
+Finishing 6.94th job.
+Starting 6.126th job.
+Finishing 6.41th job.
+Starting 6.73th job.
+Finishing 6.39th job.
+Starting 6.71th job.
+Finishing 6.40th job.
+Starting 6.72th job.
+Finishing 6.64th job.
+Starting 6.96th job.
+Finishing 6.65th job.
+Starting 6.97th job.
+Finishing 6.66th job.
+Starting 6.98th job.
+Finishing 6.81th job.
+Starting 6.113th job.
+Finishing 6.116th job.
+Finishing 6.73th job.
+Starting 6.105th job.
+Finishing 6.85th job.
+Starting 6.117th job.
+Finishing 6.126th job.
+Finishing 6.79th job.
+Starting 6.111th job.
+Finishing 6.71th job.
+Starting 6.103th job.
+Finishing 6.37th job.
+Starting 6.69th job.
+Finishing 6.99th job.
+Finishing 6.11th job.
+Starting 6.43th job.
+Finishing 6.93th job.
+Starting 6.125th job.
+Finishing 6.113th job.
+Finishing 6.89th job.
+Starting 6.121th job.
+Finishing 6.111th job.
+Finishing 6.14th job.
+Finishing 6.98th job.
+Finishing 6.105th job.
+Starting 6.46th job.
+Finishing 6.90th job.
+Starting 6.122th job.
+Finishing 6.117th job.
+Finishing 6.127th job.
+Finishing 6.69th job.
+Starting 6.101th job.
+Finishing 6.125th job.
+Finishing 6.59th job.
+Starting 6.91th job.
+Finishing 6.38th job.
+Starting 6.70th job.
+Finishing 6.103th job.
+Finishing 6.60th job.
+Starting 6.92th job.
+Finishing 6.72th job.
+Finishing 6.121th job.
+Starting 6.104th job.
+Finishing 6.51th job.
+Starting 6.83th job.
+Finishing 6.101th job.
+Finishing 6.50th job.
+Starting 6.82th job.
+Finishing 6.43th job.
+Starting 6.75th job.
+Finishing 6.70th job.
+Starting 6.102th job.
+Finishing 6.120th job.
+Finishing 6.92th job.
+Starting 6.124th job.
+Finishing 6.104th job.
+Finishing 6.54th job.
+Starting 6.86th job.
+Finishing 6.83th job.
+Starting 6.115th job.
+Finishing 6.97th job.
+Finishing 6.102th job.
+Finishing 6.82th job.
+Starting 6.114th job.
+Finishing 6.75th job.
+Starting 6.107th job.
+Finishing 6.124th job.
+Finishing 6.86th job.
+Starting 6.118th job.
+Finishing 6.115th job.
+Finishing 6.118th job.
+Finishing 6.107th job.
+Finishing 6.114th job.
+Finishing 6.96th job.
+Starting 6.128th job.
+Finishing 6.119th job.
+Finishing 6.91th job.
+Starting 6.123th job.
+Finishing 6.122th job.
+Finishing 6.46th job.
+Starting 6.78th job.
+Finishing 6.128th job.
+Finishing 6.123th job.
+Finishing 6.78th job.
+Starting 6.110th job.
+Finishing 6.110th job.
+Starting 7.1th job.
+Starting 7.3th job.
+Starting 7.2th job.
+Starting 7.4th job.
+Starting 7.6th job.
+Starting 7.7th job.
+Starting 7.8th job.
+Starting 7.9th job.
+Starting 7.10th job.
+Starting 7.13th job.
+Starting 7.14th job.
+Starting 7.11th job.
+Starting 7.30th job.
+Starting 7.16th job.
+Starting 7.17th job.
+Starting 7.15th job.
+Starting 7.20th job.
+Starting 7.31th job.
+Starting 7.22th job.
+Starting 7.32th job.
+Starting 7.18th job.
+Starting 7.19th job.
+Starting 7.26th job.
+Starting 7.23th job.
+Starting 7.28th job.
+Starting 7.29th job.
+Starting 7.25th job.
+Starting 7.21th job.
+Starting 7.27th job.
+Finishing 7.3th job.
+Starting 7.35th job.
+Finishing 7.31th job.
+Starting 7.63th job.
+Finishing 7.32th job.
+Starting 7.64th job.
+Finishing 7.1th job.
+Starting 7.33th job.
+Finishing 7.30th job.
+Starting 7.62th job.
+Finishing 7.4th job.
+Finishing 7.14th job.
+Starting 7.36th job.
+Starting 7.46th job.
+Finishing 7.27th job.
+Starting 7.59th job.
+Finishing 7.33th job.
+Finishing 7.62th job.
+Starting 7.65th job.
+Starting 7.94th job.
+Finishing 7.35th job.
+Starting 7.67th job.
+Finishing 7.16th job.
+Starting 7.48th job.
+Finishing 7.63th job.
+Starting 7.95th job.
+Finishing 7.36th job.
+Starting 7.68th job.
+Finishing 7.7th job.
+Starting 7.39th job.
+Finishing 7.64th job.
+Starting 7.96th job.
+Finishing 7.26th job.
+Starting 7.58th job.
+Finishing 7.94th job.
+Starting 7.126th job.
+Finishing 7.23th job.
+Starting 7.55th job.
+Finishing 7.5th job.
+Starting 7.37th job.
+Finishing 7.25th job.
+Starting 7.57th job.
+Finishing 7.8th job.
+Starting 7.40th job.
+Finishing 7.59th job.
+Starting 7.91th job.
+Finishing 7.67th job.
+Starting 7.99th job.
+Finishing 7.68th job.
+Starting 7.100th job.
+Finishing 7.2th job.
+Starting 7.34th job.
+Finishing 7.20th job.
+Starting 7.52th job.
+Finishing 7.48th job.
+Starting 7.80th job.
+Finishing 7.95th job.
+Starting 7.127th job.
+Finishing 7.39th job.
+Starting 7.71th job.
+Finishing 7.19th job.
+Starting 7.51th job.
+Finishing 7.65th job.
+Starting 7.97th job.
+Finishing 7.24th job.
+Starting 7.56th job.
+Finishing 7.91th job.
+Starting 7.123th job.
+Finishing 7.96th job.
+Starting 7.128th job.
+Finishing 7.99th job.
+Finishing 7.100th job.
+Finishing 7.71th job.
+Starting 7.103th job.
+Finishing 7.127th job.
+Finishing 7.46th job.
+Starting 7.78th job.
+Finishing 7.34th job.
+Starting 7.66th job.
+Finishing 7.55th job.
+Starting 7.87th job.
+Finishing 7.13th job.
+Starting 7.45th job.
+Finishing 7.52th job.
+Starting 7.84th job.
+Finishing 7.10th job.
+Starting 7.42th job.
+Finishing 7.40th job.
+Starting 7.72th job.
+Finishing 7.57th job.
+Starting 7.89th job.
+Finishing 7.126th job.
+Finishing 7.37th job.
+Starting 7.69th job.
+Finishing 7.56th job.
+Starting 7.88th job.
+Finishing 7.12th job.
+Starting 7.44th job.
+Finishing 7.6th job.
+Starting 7.38th job.
+Finishing 7.29th job.
+Starting 7.61th job.
+Finishing 7.97th job.
+Finishing 7.18th job.
+Starting 7.50th job.
+Finishing 7.66th job.
+Finishing 7.87th job.
+Starting 7.98th job.
+Starting 7.119th job.
+Finishing 7.11th job.
+Starting 7.43th job.
+Finishing 7.28th job.
+Starting 7.60th job.
+Finishing 7.22th job.
+Starting 7.54th job.
+Finishing 7.89th job.
+Starting 7.121th job.
+Finishing 7.21th job.
+Starting 7.53th job.
+Finishing 7.58th job.
+Starting 7.90th job.
+Finishing 7.123th job.
+Finishing 7.61th job.
+Starting 7.93th job.
+Finishing 7.9th job.
+Starting 7.41th job.
+Finishing 7.119th job.
+Finishing 7.17th job.
+Starting 7.49th job.
+Finishing 7.128th job.
+Finishing 7.103th job.
+Finishing 7.78th job.
+Starting 7.110th job.
+Finishing 7.51th job.
+Starting 7.83th job.
+Finishing 7.90th job.
+Starting 7.122th job.
+Finishing 7.45th job.
+Starting 7.77th job.
+Finishing 7.88th job.
+Starting 7.120th job.
+Finishing 7.53th job.
+Starting 7.85th job.
+Finishing 7.93th job.
+Starting 7.125th job.
+Finishing 7.84th job.
+Starting 7.116th job.
+Finishing 7.41th job.
+Starting 7.73th job.
+Finishing 7.60th job.
+Starting 7.92th job.
+Finishing 7.72th job.
+Starting 7.104th job.
+Finishing 7.69th job.
+Starting 7.101th job.
+Finishing 7.43th job.
+Starting 7.75th job.
+Finishing 7.98th job.
+Finishing 7.54th job.
+Starting 7.86th job.
+Finishing 7.50th job.
+Starting 7.82th job.
+Finishing 7.80th job.
+Starting 7.112th job.
+Finishing 7.44th job.
+Starting 7.76th job.
+Finishing 7.121th job.
+Finishing 7.83th job.
+Starting 7.115th job.
+Finishing 7.125th job.
+Finishing 7.42th job.
+Starting 7.74th job.
+Finishing 7.38th job.
+Starting 7.70th job.
+Finishing 7.73th job.
+Starting 7.105th job.
+Finishing 7.120th job.
+Finishing 7.75th job.
+Starting 7.107th job.
+Finishing 7.86th job.
+Starting 7.118th job.
+Finishing 7.110th job.
+Finishing 7.92th job.
+Starting 7.124th job.
+Finishing 7.74th job.
+Starting 7.106th job.
+Finishing 7.15th job.
+Finishing 7.115th job.
+Starting 7.47th job.
+Finishing 7.116th job.
+Finishing 7.85th job.
+Starting 7.117th job.
+Finishing 7.49th job.
+Starting 7.81th job.
+Finishing 7.107th job.
+Finishing 7.105th job.
+Finishing 7.77th job.
+Starting 7.109th job.
+Finishing 7.124th job.
+Finishing 7.106th job.
+Finishing 7.117th job.
+Finishing 7.122th job.
+Finishing 7.82th job.
+Starting 7.114th job.
+Finishing 7.109th job.
+Finishing 7.104th job.
+Finishing 7.81th job.
+Starting 7.113th job.
+Finishing 7.70th job.
+Starting 7.102th job.
+Finishing 7.47th job.
+Starting 7.79th job.
+Finishing 7.118th job.
+Finishing 7.101th job.
+Finishing 7.112th job.
+Finishing 7.114th job.
+Finishing 7.76th job.
+Starting 7.108th job.
+Finishing 7.113th job.
+Finishing 7.102th job.
+Finishing 7.79th job.
+Starting 7.111th job.
+Finishing 7.108th job.
+Finishing 7.111th job.
+Starting 8.1th job.
+Starting 8.2th job.
+Starting 8.4th job.
+Starting 8.3th job.
+Starting 8.5th job.
+Starting 8.7th job.
+Starting 8.6th job.
+Starting 8.8th job.
+Starting 8.12th job.
+Starting 8.10th job.
+Starting 8.9th job.
+Starting 8.21th job.
+Starting 8.22th job.
+Starting 8.11th job.
+Starting 8.14th job.
+Starting 8.13th job.
+Starting 8.25th job.
+Starting 8.26th job.
+Starting 8.17th job.
+Starting 8.15th job.
+Starting 8.16th job.
+Starting 8.18th job.
+Starting 8.30th job.
+Starting 8.19th job.
+Starting 8.32th job.
+Starting 8.20th job.
+Starting 8.23th job.
+Starting 8.24th job.
+Starting 8.27th job.
+Starting 8.29th job.
+Starting 8.31th job.
+Finishing 8.10th job.
+Starting 8.42th job.
+Finishing 8.4th job.
+Starting 8.36th job.
+Finishing 8.21th job.
+Starting 8.53th job.
+Finishing 8.32th job.
+Starting 8.64th job.
+Finishing 8.17th job.
+Starting 8.49th job.
+Finishing 8.8th job.
+Finishing 8.18th job.
+Starting 8.50th job.
+Starting 8.40th job.
+Finishing 8.5th job.
+Starting 8.37th job.
+Finishing 8.15th job.
+Starting 8.47th job.
+Finishing 8.7th job.
+Starting 8.39th job.
+Finishing 8.64th job.
+Starting 8.96th job.
+Finishing 8.12th job.
+Starting 8.44th job.
+Finishing 8.22th job.
+Starting 8.54th job.
+Finishing 8.3th job.
+Starting 8.35th job.
+Finishing 8.20th job.
+Starting 8.52th job.
+Finishing 8.47th job.
+Starting 8.79th job.
+Finishing 8.49th job.
+Starting 8.81th job.
+Finishing 8.6th job.
+Starting 8.38th job.
+Finishing 8.96th job.
+Starting 8.128th job.
+Finishing 8.42th job.
+Starting 8.74th job.
+Finishing 8.29th job.
+Starting 8.61th job.
+Finishing 8.27th job.
+Starting 8.59th job.
+Finishing 8.52th job.
+Starting 8.84th job.
+Finishing 8.2th job.
+Starting 8.34th job.
+Finishing 8.30th job.
+Starting 8.62th job.
+Finishing 8.23th job.
+Starting 8.55th job.
+Finishing 8.31th job.
+Starting 8.63th job.
+Finishing 8.25th job.
+Starting 8.57th job.
+Finishing 8.50th job.
+Starting 8.82th job.
+Finishing 8.37th job.
+Starting 8.69th job.
+Finishing 8.34th job.
+Starting 8.66th job.
+Finishing 8.62th job.
+Starting 8.94th job.
+Finishing 8.28th job.
+Starting 8.60th job.
+Finishing 8.81th job.
+Starting 8.113th job.
+Finishing 8.26th job.
+Starting 8.58th job.
+Finishing 8.13th job.
+Starting 8.45th job.
+Finishing 8.128th job.
+Finishing 8.61th job.
+Starting 8.93th job.
+Finishing 8.39th job.
+Starting 8.71th job.
+Finishing 8.1th job.
+Starting 8.33th job.
+Finishing 8.79th job.
+Starting 8.111th job.
+Finishing 8.16th job.
+Starting 8.48th job.
+Finishing 8.94th job.
+Starting 8.126th job.
+Finishing 8.60th job.
+Starting 8.92th job.
+Finishing 8.82th job.
+Starting 8.114th job.
+Finishing 8.71th job.
+Starting 8.103th job.
+Finishing 8.93th job.
+Starting 8.125th job.
+Finishing 8.126th job.
+Finishing 8.53th job.
+Starting 8.85th job.
+Finishing 8.33th job.
+Starting 8.65th job.
+Finishing 8.55th job.
+Starting 8.87th job.
+Finishing 8.36th job.
+Finishing 8.69th job.
+Starting 8.101th job.
+Starting 8.68th job.
+Finishing 8.125th job.
+Finishing 8.9th job.
+Starting 8.41th job.
+Finishing 8.63th job.
+Starting 8.95th job.
+Finishing 8.84th job.
+Starting 8.116th job.
+Finishing 8.111th job.
+Finishing 8.40th job.
+Starting 8.72th job.
+Finishing 8.92th job.
+Starting 8.124th job.
+Finishing 8.54th job.
+Starting 8.86th job.
+Finishing 8.57th job.
+Starting 8.89th job.
+Finishing 8.66th job.
+Starting 8.98th job.
+Finishing 8.114th job.
+Finishing 8.74th job.
+Starting 8.106th job.
+Finishing 8.59th job.
+Starting 8.91th job.
+Finishing 8.38th job.
+Starting 8.70th job.
+Finishing 8.101th job.
+Finishing 8.14th job.
+Starting 8.46th job.
+Finishing 8.85th job.
+Starting 8.117th job.
+Finishing 8.124th job.
+Finishing 8.113th job.
+Finishing 8.72th job.
+Starting 8.104th job.
+Finishing 8.45th job.
+Finishing 8.65th job.
+Starting 8.77th job.
+Starting 8.97th job.
+Finishing 8.58th job.
+Starting 8.90th job.
+Finishing 8.48th job.
+Starting 8.80th job.
+Finishing 8.95th job.
+Starting 8.127th job.
+Finishing 8.86th job.
+Starting 8.118th job.
+Finishing 8.44th job.
+Starting 8.76th job.
+Finishing 8.19th job.
+Starting 8.51th job.
+Finishing 8.24th job.
+Starting 8.56th job.
+Finishing 8.35th job.
+Starting 8.67th job.
+Finishing 8.46th job.
+Starting 8.78th job.
+Finishing 8.91th job.
+Starting 8.123th job.
+Finishing 8.77th job.
+Starting 8.109th job.
+Finishing 8.41th job.
+Starting 8.73th job.
+Finishing 8.51th job.
+Starting 8.83th job.
+Finishing 8.127th job.
+Finishing 8.11th job.
+Starting 8.43th job.
+Finishing 8.97th job.
+Finishing 8.104th job.
+Finishing 8.106th job.
+Finishing 8.90th job.
+Starting 8.122th job.
+Finishing 8.89th job.
+Starting 8.121th job.
+Finishing 8.123th job.
+Finishing 8.80th job.
+Starting 8.112th job.
+Finishing 8.116th job.
+Finishing 8.76th job.
+Starting 8.108th job.
+Finishing 8.117th job.
+Finishing 8.98th job.
+Finishing 8.78th job.
+Starting 8.110th job.
+Finishing 8.73th job.
+Starting 8.105th job.
+Finishing 8.70th job.
+Starting 8.102th job.
+Finishing 8.67th job.
+Starting 8.99th job.
+Finishing 8.122th job.
+Finishing 8.108th job.
+Finishing 8.121th job.
+Finishing 8.87th job.
+Starting 8.119th job.
+Finishing 8.68th job.
+Starting 8.100th job.
+Finishing 8.56th job.
+Starting 8.88th job.
+Finishing 8.109th job.
+Finishing 8.112th job.
+Finishing 8.105th job.
+Finishing 8.83th job.
+Starting 8.115th job.
+Finishing 8.103th job.
+Finishing 8.118th job.
+Finishing 8.110th job.
+Finishing 8.43th job.
+Starting 8.75th job.
+Finishing 8.100th job.
+Finishing 8.119th job.
+Finishing 8.102th job.
+Finishing 8.88th job.
+Starting 8.120th job.
+Finishing 8.115th job.
+Finishing 8.99th job.
+Finishing 8.75th job.
+Starting 8.107th job.
+Finishing 8.120th job.
+Finishing 8.107th job.
+Starting 9.1th job.
+Starting 9.2th job.
+Starting 9.3th job.
+Starting 9.4th job.
+Starting 9.5th job.
+Starting 9.7th job.
+Starting 9.8th job.
+Starting Starting 9.10.23th job.
+Starting 9.9th job.
+Starting 9.11th job.
+Starting 9.12th job.
+Starting 9.24th job.
+Starting 9.15th job.
+Starting 9.25th job.
+Starting 9.14th job.
+Starting 9.13th job.
+Starting 9.26th job.
+Starting 9.17th job.
+Starting 9.27th job.
+Starting 9.19th job.
+Starting 9.20th job.
+Starting 9.21th job.
+Starting 9.18th job.
+Starting 9.28th job.
+Starting 9.29th job.
+Starting 9.30th job.
+Starting 9.22th job.
+Starting 9.31th job.
+Starting 9.32th job.
+Finishing 9.26th job.
+Starting 9.58th job.
+Finishing 9.1th job.
+Starting 9.33th job.
+Finishing 9.7th job.
+Starting 9.39th job.
+Finishing 9.8th job.
+Starting 9.40th job.
+Finishing 9.22th job.
+Starting 9.54th job.
+Finishing 9.32th job.
+Starting 9.64th job.
+Finishing 9.13th job.
+Starting 9.45th job.
+Finishing 9.16th job.
+Starting 9.48th job.
+Finishing 9.28th job.
+Starting 9.60th job.
+Finishing 9.58th job.
+Starting 9.90th job.
+Finishing 9.29th job.
+Finishing 9.39th job.
+Starting 9.71th job.
+Starting 9.61th job.
+Finishing 9.14th job.
+Starting 9.46th job.
+Finishing 9.15th job.
+Starting 9.47th job.
+Finishing 9.24th job.
+Starting 9.56th job.
+Finishing 9.17th job.
+Starting 9.49th job.
+Finishing 9.31th job.
+Starting 9.63th job.
+Finishing 9.10th job.
+Starting 9.42th job.
+Finishing 9.46th job.
+Starting 9.78th job.
+Finishing 9.6th job.
+Starting 9.38th job.
+Finishing 9.45th job.
+Starting 9.77th job.
+Finishing 9.20th job.
+Starting 9.52th job.
+Finishing 9.90th job.
+Starting 9.122th job.
+Finishing 9.3th job.
+Starting 9.35th job.
+Finishing 9.11th job.
+Starting 9.43th job.
+Finishing 9.19th job.
+Starting 9.51th job.
+Finishing 9.12th job.
+Starting 9.44th job.
+Finishing 9.4th job.
+Starting 9.36th job.
+Finishing 9.33th job.
+Starting 9.65th job.
+Finishing 9.40th job.
+Starting 9.72th job.
+Finishing 9.42th job.
+Starting 9.74th job.
+Finishing 9.27th job.
+Starting 9.59th job.
+Finishing 9.21th job.
+Starting 9.53th job.
+Finishing 9.61th job.
+Starting 9.93th job.
+Finishing 9.54th job.
+Starting 9.86th job.
+Finishing 9.60th job.
+Starting 9.92th job.
+Finishing 9.63th job.
+Starting 9.95th job.
+Finishing 9.122th job.
+Finishing 9.9th job.
+Starting 9.41th job.
+Finishing 9.2th job.
+Starting 9.34th job.
+Finishing 9.48th job.
+Starting 9.80th job.
+Finishing 9.38th job.
+Starting 9.70th job.
+Finishing 9.64th job.
+Starting 9.96th job.
+Finishing 9.30th job.
+Starting 9.62th job.
+Finishing 9.74th job.
+Starting 9.106th job.
+Finishing 9.43th job.
+Starting 9.75th job.
+Finishing 9.5th job.
+Starting 9.37th job.
+Finishing 9.95th job.
+Starting 9.127th job.
+Finishing 9.25th job.
+Starting 9.57th job.
+Finishing 9.65th job.
+Starting 9.97th job.
+Finishing 9.86th job.
+Starting 9.118th job.
+Finishing 9.35th job.
+Starting 9.67th job.
+Finishing 9.59th job.
+Starting 9.91th job.
+Finishing 9.96th job.
+Starting 9.128th job.
+Finishing 9.92th job.
+Starting 9.124th job.
+Finishing 9.47th job.
+Starting 9.79th job.
+Finishing 9.18th job.
+Starting 9.50th job.
+Finishing 9.78th job.
+Starting 9.110th job.
+Finishing 9.44th job.
+Starting 9.76th job.
+Finishing 9.52th job.
+Starting 9.84th job.
+Finishing 9.127th job.
+Finishing 9.57th job.
+Starting 9.89th job.
+Finishing 9.53th job.
+Starting 9.85th job.
+Finishing 9.118th job.
+Finishing 9.50th job.
+Starting 9.82th job.
+Finishing 9.62th job.
+Finishing 9.124th job.
+Finishing 9.128th job.
+Starting 9.94th job.
+Finishing 9.36th job.
+Starting 9.68th job.
+Finishing 9.85th job.
+Starting 9.117th job.
+Finishing 9.76th job.
+Starting 9.108th job.
+Finishing 9.79th job.
+Starting 9.111th job.
+Finishing 9.110th job.
+Finishing 9.89th job.
+Starting 9.121th job.
+Finishing 9.82th job.
+Starting 9.114th job.
+Finishing 9.77th job.
+Starting 9.109th job.
+Finishing 9.108th job.
+Finishing 9.117th job.
+Finishing 9.51th job.
+Starting 9.83th job.
+Finishing 9.56th job.
+Starting 9.88th job.
+Finishing 9.111th job.
+Finishing 9.106th job.
+Finishing 9.84th job.
+Starting 9.116th job.
+Finishing 9.75th job.
+Starting 9.107th job.
+Finishing 9.70th job.
+Starting 9.102th job.
+Finishing 9.121th job.
+Finishing 9.97th job.
+Finishing 9.94th job.
+Starting 9.126th job.
+Finishing 9.88th job.
+Starting 9.120th job.
+Finishing 9.72th job.
+Finishing 9.114th job.
+Finishing 9.93th job.
+Starting 9.104th job.
+Starting 9.125th job.
+Finishing 9.41th job.
+Starting 9.73th job.
+Finishing 9.23th job.
+Starting 9.55th job.
+Finishing 9.80th job.
+Starting 9.112th job.
+Finishing 9.71th job.
+Starting 9.103th job.
+Finishing 9.116th job.
+Finishing 9.67th job.
+Starting 9.99th job.
+Finishing 9.49th job.
+Starting 9.81th job.
+Finishing 9.126th job.
+Finishing 9.120th job.
+Finishing 9.37th job.
+Starting 9.69th job.
+Finishing 9.125th job.
+Finishing 9.55th job.
+Starting 9.87th job.
+Finishing 9.107th job.
+Finishing 9.103th job.
+Finishing 9.73th job.
+Starting 9.105th job.
+Finishing 9.68th job.
+Starting 9.100th job.
+Finishing 9.69th job.
+Starting 9.101th job.
+Finishing 9.102th job.
+Finishing 9.83th job.
+Starting 9.115th job.
+Finishing 9.81th job.
+Starting 9.113th job.
+Finishing 9.100th job.
+Finishing 9.87th job.
+Starting 9.119th job.
+Finishing 9.101th job.
+Finishing 9.34th job.
+Starting 9.66th job.
+Finishing 9.91th job.
+Starting 9.123th job.
+Finishing 9.105th job.
+Finishing 9.113th job.
+Finishing 9.115th job.
+Finishing 9.112th job.
+Finishing 9.109th job.
+Finishing 9.104th job.
+Finishing 9.99th job.
+Finishing 9.119th job.
+Finishing 9.123th job.
+Finishing 9.66th job.
+Starting 9.98th job.
+Finishing 9.98th job.
+Starting 10.1th job.
+Starting 10.2th job.
+Starting 10.4th job.
+Starting 10.3th job.
+Starting 10.6th job.
+Starting 10.8th job.
+Starting 10.5th job.
+Starting 10.16th job.
+Starting 10.9th job.
+Starting 10.7th job.
+Starting 10.17th job.
+Starting 10.18th job.
+Starting 10.10th job.
+Starting 10.12th job.
+Starting 10.19th job.
+Starting 10.11th job.
+Starting 10.13th job.
+Starting 10.14th job.
+Starting 10.15th job.
+Starting 10.20th job.
+Starting 10.21th job.
+Starting 10.22th job.
+Starting 10.23th job.
+Starting 10.24th job.
+Starting 10.25th job.
+Starting 10.26th job.
+Starting 10.27th job.
+Starting 10.28th job.
+Starting 10.29th job.
+Starting 10.30th job.
+Starting 10.31th job.
+Starting 10.32th job.
+Finishing 10.10th job.
+Starting 10.42th job.
+Finishing 10.4th job.
+Starting 10.36th job.
+Finishing 10.11th job.
+Starting 10.43th job.
+Finishing 10.3th job.
+Starting 10.35th job.
+Finishing 10.12th job.
+Starting 10.44th job.
+Finishing 10.6th job.
+Starting 10.38th job.
+Finishing 10.15th job.
+Starting 10.47th job.
+Finishing 10.9th job.
+Starting 10.41th job.
+Finishing 10.8th job.
+Starting 10.40th job.
+Finishing 10.13th job.
+Starting 10.45th job.
+Finishing 10.1th job.
+Starting 10.33th job.
+Finishing 10.19th job.
+Starting 10.51th job.
+Finishing 10.18th job.
+Starting 10.50th job.
+Finishing 10.45th job.
+Starting 10.77th job.
+Finishing 10.43th job.
+Starting 10.75th job.
+Finishing 10.38th job.
+Starting 10.70th job.
+Finishing 10.40th job.
+Starting 10.72th job.
+Finishing 10.47th job.
+Starting 10.79th job.
+Finishing 10.42th job.
+Starting 10.74th job.
+Finishing 10.16th job.
+Starting 10.48th job.
+Finishing 10.7th job.
+Starting 10.39th job.
+Finishing 10.79th job.
+Starting 10.111th job.
+Finishing 10.29th job.
+Starting 10.61th job.
+Finishing 10.32th job.
+Starting 10.64th job.
+Finishing 10.21th job.
+Starting 10.53th job.
+Finishing 10.72th job.
+Starting 10.104th job.
+Finishing 10.75th job.
+Starting 10.107th job.
+Finishing 10.28th job.
+Starting 10.60th job.
+Finishing 10.70th job.
+Starting 10.102th job.
+Finishing 10.77th job.
+Starting 10.109th job.
+Finishing 10.53th job.
+Starting 10.85th job.
+Finishing 10.27th job.
+Starting 10.59th job.
+Finishing 10.30th job.
+Starting 10.62th job.
+Finishing 10.23th job.
+Starting 10.55th job.
+Finishing 10.64th job.
+Starting 10.96th job.
+Finishing 10.26th job.
+Starting 10.58th job.
+Finishing 10.48th job.
+Starting 10.80th job.
+Finishing 10.74th job.
+Starting 10.106th job.
+Finishing 10.31th job.
+Starting 10.63th job.
+Finishing 10.102th job.
+Finishing 10.51th job.
+Starting 10.83th job.
+Finishing 10.107th job.
+Finishing 10.61th job.
+Starting 10.93th job.
+Finishing 10.20th job.
+Starting 10.52th job.
+Finishing 10.55th job.
+Starting 10.87th job.
+Finishing 10.41th job.
+Starting 10.73th job.
+Finishing 10.24th job.
+Starting 10.56th job.
+Finishing 10.63th job.
+Starting 10.95th job.
+Finishing 10.62th job.
+Starting 10.94th job.
+Finishing 10.111th job.
+Finishing 10.80th job.
+Starting 10.112th job.
+Finishing 10.83th job.
+Starting 10.115th job.
+Finishing 10.96th job.
+Starting 10.128th job.
+Finishing 10.85th job.
+Starting 10.117th job.
+Finishing 10.56th job.
+Starting 10.88th job.
+Finishing 10.93th job.
+Starting 10.125th job.
+Finishing 10.52th job.
+Starting 10.84th job.
+Finishing 10.14th job.
+Starting 10.46th job.
+Finishing 10.59th job.
+Starting 10.91th job.
+Finishing 10.94th job.
+Starting 10.126th job.
+Finishing 10.95th job.
+Starting 10.127th job.
+Finishing 10.58th job.
+Starting 10.90th job.
+Finishing 10.33th job.
+Starting 10.65th job.
+Finishing 10.25th job.
+Starting 10.57th job.
+Finishing 10.128th job.
+Finishing 10.115th job.
+Finishing 10.109th job.
+Finishing 10.22th job.
+Starting 10.54th job.
+Finishing 10.60th job.
+Starting 10.92th job.
+Finishing 10.2th job.
+Starting 10.34th job.
+Finishing 10.112th job.
+Finishing 10.125th job.
+Finishing 10.87th job.
+Starting 10.119th job.
+Finishing 10.104th job.
+Finishing 10.73th job.
+Starting 10.105th job.
+Finishing 10.106th job.
+Finishing 10.50th job.
+Starting 10.82th job.
+Finishing 10.127th job.
+Finishing 10.126th job.
+Finishing 10.88th job.
+Starting 10.120th job.
+Finishing 10.44th job.
+Starting 10.76th job.
+Finishing 10.90th job.
+Starting 10.122th job.
+Finishing 10.35th job.
+Starting 10.67th job.
+Finishing 10.17th job.
+Starting 10.49th job.
+Finishing 10.54th job.
+Starting 10.86th job.
+Finishing 10.84th job.
+Starting 10.116th job.
+Finishing 10.5th job.
+Starting 10.37th job.
+Finishing 10.91th job.
+Starting 10.123th job.
+Finishing 10.120th job.
+Finishing 10.57th job.
+Starting 10.89th job.
+Finishing 10.122th job.
+Finishing 10.92th job.
+Starting 10.124th job.
+Finishing 10.117th job.
+Finishing 10.82th job.
+Starting 10.114th job.
+Finishing 10.39th job.
+Starting 10.71th job.
+Finishing 10.46th job.
+Starting 10.78th job.
+Finishing 10.119th job.
+Finishing 10.37th job.
+Starting 10.69th job.
+Finishing 10.123th job.
+Finishing 10.89th job.
+Starting 10.121th job.
+Finishing 10.86th job.
+Starting 10.118th job.
+Finishing 10.114th job.
+Finishing 10.34th job.
+Starting 10.66th job.
+Finishing 10.36th job.
+Starting 10.68th job.
+Finishing 10.116th job.
+Finishing 10.76th job.
+Starting 10.108th job.
+Finishing 10.105th job.
+Finishing 10.78th job.
+Starting 10.110th job.
+Finishing 10.124th job.
+Finishing 10.65th job.
+Starting 10.97th job.
+Finishing 10.71th job.
+Starting 10.103th job.
+Finishing 10.121th job.
+Finishing 10.118th job.
+Finishing 10.49th job.
+Starting 10.81th job.
+Finishing 10.68th job.
+Starting 10.100th job.
+Finishing 10.66th job.
+Starting 10.98th job.
+Finishing 10.108th job.
+Finishing 10.110th job.
+Finishing 10.97th job.
+Finishing 10.67th job.
+Starting 10.99th job.
+Finishing 10.69th job.
+Starting 10.101th job.
+Finishing 10.103th job.
+Finishing 10.98th job.
+Finishing 10.81th job.
+Starting 10.113th job.
+Finishing 10.100th job.
+Finishing 10.99th job.
+Finishing 10.101th job.
+Finishing 10.113th job.
+> out = unlist(out)
+> print(out)
+   [1] 0.3097946982 0.0858943532 0.0527053003 0.0157933575 0.1296605371
+   [6] 0.3304988377 0.1048948642 0.0156465644 0.9499751558 0.0440383567
+  [11] 0.3953463676 0.0432719492 0.7039519119 0.1369605046 0.2166440331
+  [16] 0.9575821625 0.3941666858 0.9783723946 0.3143393189 0.7797327762
+  [21] 0.0616159618 0.6998990311 0.0111956960 0.0231148208 0.4251657616
+  [26] 0.3058606447 0.9064094618 0.3010679862 0.1068976244 0.0389235898
+  [31] 0.0226637718 0.2435585414 0.1576764849 0.0121612670 0.7980284096
+  [36] 0.7633615244 0.9626125337 0.1494792963 0.4238845350 0.6356318767
+  [41] 0.2758840124 0.0354186871 0.0214551025 0.6606058101 0.2180710038
+  [46] 0.4763622313 0.0490301929 0.3943866416 0.3956108304 0.3048895910
+  [51] 0.6406490793 0.0267507316 0.0128955426 0.6894981471 0.6441900941
+  [56] 0.0001592029 0.0141863983 0.9659898791 0.0110783429 0.0941024510
+  [61] 0.0595138638 0.3946052407 0.3954439028 0.9738944651 0.9573352349
+  [66] 0.0429862262 0.2202565640 0.3904540856 0.1272034637 0.0059200519
+  [71] 0.0878744348 0.4767116081 0.1116118345 0.0254785271 0.4438315102
+  [76] 0.0545817336 0.1707141102 0.3094540984 0.0539155336 0.0662695555
+  [81] 0.0112255267 0.2986932125 0.3932155946 0.0516582855 0.1000716714
+  [86] 0.0295377629 0.1715082758 0.1451074441 0.4242473354 0.1426302713
+  [91] 0.0258956387 0.0724539040 0.4234787499 0.2786985830 0.9852082910
+  [96] 0.8038852943 0.0389841865 0.0246807905 0.2561929083 0.0971459493
+ [101] 0.0006588318 0.3076308908 0.1534247717 0.0637437300 0.3142743782
+ [106] 0.1812358407 0.0399672332 0.2239719924 0.0027494168 0.0510336233
+ [111] 0.1352834834 0.0275794179 0.9902126193 0.4058208022 0.1087541233
+ [116] 0.4136316174 0.0849301923 0.0194647134 0.3567372225 0.0461173881
+ [121] 0.0457351909 0.0245815972 0.0291328551 0.4250463978 0.5742397421
+ [126] 0.0259832535 0.9562836858 0.6602101077 0.9516733673 0.3093390282
+ [131] 0.8122684679 0.7916170672 0.9843719264 0.4461481144 0.9720054698
+ [136] 0.8024986969 0.8208263530 0.7570856135 0.3521800657 0.9413630937
+ [141] 0.9891600113 0.9494176104 0.8236175792 0.9549090314 0.2681774422
+ [146] 0.9189041828 0.8207112314 0.9872571821 0.7987606940 0.9540306080
+ [151] 0.9907877491 0.7853320216 0.4998592097 0.8277559505 0.9895119834
+ [156] 0.9508719974 0.4126239917 0.0471036992 0.7959746014 0.8184548048
+ [161] 0.8109571074 0.9884975336 0.7992068320 0.9683251516 0.9775642656
+ [166] 0.7993101838 0.8202024231 0.9714305932 0.8221253758 0.8119747174
+ [171] 0.7999805453 0.7797679548 0.8486339142 0.9610099598 0.8004508068
+ [176] 0.8238782836 0.3704108793 0.9516485221 0.7672677020 0.8176941135
+ [181] 0.7816317572 0.8050689920 0.8370901161 0.3125737479 0.1437244393
+ [186] 0.7799869577 0.8105057200 0.8416631553 0.8138109879 0.9586158857
+ [191] 0.4399514245 0.9968273727 0.0642619258 0.9879729615 0.7842763402
+ [196] 0.7751233872 0.8159836464 0.8163768888 0.7808828078 0.8165928008
+ [201] 0.8561596826 0.9501031235 0.7834974568 0.7835025888 0.7696389176
+ [206] 0.8018649279 0.4998251570 0.8226164729 0.8015861661 0.8394243548
+ [211] 0.9809011557 0.8094869521 0.9569281170 0.7978410721 0.2704525348
+ [216] 0.8187599461 0.0464156748 0.5178811207 0.9926132450 0.7821645493
+ [221] 0.9759378628 0.9827708557 0.8112220166 0.7946780040 0.7970768099
+ [226] 0.9884202903 0.2848776311 0.2836945977 0.4779708820 0.8296114933
+ [231] 0.5135354662 0.9456057796 0.8067529525 0.9893624002 0.7538858423
+ [236] 0.9631907900 0.4448286099 0.0449175290 0.2835478947 0.8152618153
+ [241] 0.8124536594 0.9415196496 0.5108373012 0.9876107899 0.8846518906
+ [246] 0.9869765485 0.8091507346 0.8553799545 0.8029837530 0.8071986365
+ [251] 0.9461999710 0.7723422194 0.7978264175 0.9604862357 0.9525643976
+ [256] 0.9642075117 0.7170301069 0.3952733494 0.7411630271 0.3452946289
+ [261] 0.5837343138 0.3294728756 0.5023253022 0.4173602050 0.4209544442
+ [266] 0.9895794733 0.4983350223 0.3555599421 0.7113364192 0.9648443386
+ [271] 0.5140239237 0.3969010887 0.4958635492 0.7071607764 0.7089094855
+ [276] 0.5717698337 0.4065663489 0.7153729524 0.8706678263 0.7162654414
+ [281] 0.5546914634 0.3766788354 0.3355985164 0.6486009070 0.9717313931
+ [286] 0.5530148810 0.5322013152 0.3370201860 0.7183891926 0.7822438890
+ [291] 0.3804293825 0.9897627554 0.6341931583 0.7334014821 0.7255608154
+ [296] 0.9568923259 0.3397754896 0.6839527466 0.4580949750 0.3875745907
+ [301] 0.7008813069 0.3360987763 0.9778715041 0.7116716429 0.5874431389
+ [306] 0.7102611991 0.5556802177 0.3518735536 0.4418908944 0.6013413401
+ [311] 0.4265708349 0.3708007807 0.9844921610 0.3359708010 0.5885878087
+ [316] 0.4001332403 0.3611013770 0.5900414716 0.5947497313 0.7972669005
+ [321] 0.5899952513 0.8120845803 0.3256330420 0.3397191550 0.3482790379
+ [326] 0.7389171168 0.6991624550 0.7635833094 0.6796400095 0.4085552502
+ [331] 0.3542490042 0.9888756177 0.4009901987 0.4115919845 0.5586741091
+ [336] 0.3606940688 0.8038318109 0.7985607385 0.3398496637 0.7959518872
+ [341] 0.9377890614 0.3324676191 0.4090487206 0.4032060334 0.4024943052
+ [346] 0.3527814146 0.6388400778 0.5082875856 0.5203226858 0.6900856553
+ [351] 0.4945547169 0.5834045401 0.7351701308 0.3530156335 0.4831868047
+ [356] 0.6904705336 0.3322550550 0.3944218543 0.5534162567 0.4346867152
+ [361] 0.3369010126 0.9750480604 0.3658791225 0.8037048819 0.7008128266
+ [366] 0.5927507347 0.6787387696 0.7828840955 0.9471132217 0.4713943060
+ [371] 0.4443134676 0.3452879797 0.3752321198 0.6993392362 0.9627738920
+ [376] 0.9162068669 0.5051008813 0.4868582102 0.3216667372 0.9426465781
+ [381] 0.3421788090 0.4196549620 0.9801142542 0.5209984953 0.9618415732
+ [386] 0.6404263154 0.9543483160 0.6190448141 0.9754368347 0.5665249352
+ [391] 0.9801425055 0.5615270719 0.5814107820 0.4521323096 0.4553903966
+ [396] 0.5737960991 0.5609635128 0.4520737834 0.9659800287 0.9837684314
+ [401] 0.4665265281 0.5760223136 0.7130679368 0.5741375649 0.6009285436
+ [406] 0.5842968013 0.3862193762 0.5729969759 0.9818488756 0.9492694028
+ [411] 0.4516179241 0.9596627528 0.5853490483 0.5612782485 0.9621592111
+ [416] 0.5807107497 0.7517762564 0.9644331316 0.5650478584 0.5718934333
+ [421] 0.4937395785 0.4551029463 0.5668033252 0.6022874144 0.5741096103
+ [426] 0.4504296141 0.5662598721 0.5850783719 0.5732127724 0.5885478207
+ [431] 0.5852573547 0.9818108795 0.5708465435 0.6039448547 0.5666874719
+ [436] 0.4886965782 0.4947957830 0.4535058510 0.3569415738 0.5719541972
+ [441] 0.5624955847 0.7120658759 0.5636579189 0.4503495944 0.6724990320
+ [446] 0.4522325190 0.5785265585 0.4529787198 0.5839295276 0.5453474955
+ [451] 0.4505305833 0.9806727627 0.4474384127 0.5978324945 0.5679183345
+ [456] 0.6923698032 0.5821525679 0.5495998970 0.5773689848 0.9672972440
+ [461] 0.5803344302 0.9770492098 0.5735078850 0.8830371785 0.6778696131
+ [466] 0.5752247088 0.5753174044 0.5671805634 0.9753058230 0.4658039459
+ [471] 0.5008869811 0.6183782061 0.9810882314 0.5686398581 0.4563923502
+ [476] 0.5640190475 0.6256599047 0.5938055611 0.5877178021 0.6171843510
+ [481] 0.6445421639 0.5738437220 0.6460690562 0.5680209332 0.5698752059
+ [486] 0.5718496023 0.5372939256 0.5727716654 0.9524402055 0.8388782771
+ [491] 0.9735545643 0.9578834528 0.9823499668 0.9522801901 0.4534713083
+ [496] 0.9611140034 0.5775793845 0.9792480952 0.9651117608 0.9853682829
+ [501] 0.5823512980 0.5116308517 0.4876619083 0.5712780017 0.4553648324
+ [506] 0.5609420645 0.9732886865 0.4551458382 0.5685227617 0.4532981035
+ [511] 0.5830709028 0.4564152256 0.4993276630 0.9494061797 0.9446798148
+ [516] 0.9636899386 0.9239813194 0.9265136931 0.9349418113 0.9539662278
+ [521] 0.9541072826 0.9889521695 0.9812484707 0.9288313364 0.9243741648
+ [526] 0.4954471885 0.6501438492 0.9424521465 0.9335333686 0.9797446465
+ [531] 0.9739751281 0.9545100450 0.9383254174 0.9721877210 0.9462266207
+ [536] 0.9878022351 0.9456148778 0.9541916488 0.9290383681 0.9766210115
+ [541] 0.9522073530 0.9502689732 0.6310116895 0.9756416082 0.9089035892
+ [546] 0.9070557654 0.9483216711 0.9338665664 0.9668603364 0.9720467680
+ [551] 0.9441306385 0.9201385180 0.9517309837 0.9277464499 0.4978696052
+ [556] 0.9593594983 0.9645420159 0.9564406725 0.9114712734 0.6143634770
+ [561] 0.9884652172 0.9790799514 0.9436121388 0.9152176859 0.9646678617
+ [566] 0.9767974957 0.9655104502 0.9705498152 0.8989294576 0.9073746220
+ [571] 0.9018023169 0.5085722171 0.9557213451 0.9512304381 0.9806018695
+ [576] 0.9302683535 0.9384054158 0.9764703781 0.9374853349 0.9493730083
+ [581] 0.9125277723 0.4987374068 0.9146627573 0.9302391508 0.5052400768
+ [586] 0.9703120680 0.9591796091 0.4809012661 0.9841912980 0.9690887310
+ [591] 0.9782332465 0.9745685197 0.8930213954 0.9115150585 0.9784237083
+ [596] 0.9567010814 0.9723746362 0.9867802611 0.9621825966 0.4959211248
+ [601] 0.9798293445 0.9700959126 0.9694808545 0.9509956911 0.4918789259
+ [606] 0.8946384737 0.5037348367 0.9578760451 0.9456402493 0.9828987054
+ [611] 0.4900940011 0.9432508792 0.9641940490 0.9722837001 0.9344292423
+ [616] 0.9788533112 0.9149482197 0.9353186298 0.9783876850 0.9135575469
+ [621] 0.9810930131 0.9445487758 0.9559065706 0.9120222078 0.9658748167
+ [626] 0.9793173805 0.9707088063 0.9101620561 0.9797609707 0.9430482644
+ [631] 0.9899734505 0.9792315661 0.9863956393 0.9538879174 0.9644443197
+ [636] 0.9880882696 0.9244021884 0.9828750155 0.9712593104 0.9442926971
+ [641] 0.9545089071 0.9291026370 0.9626823168 0.5666429162 0.7757424386
+ [646] 0.5563538117 0.5742275247 0.7444427620 0.5235985120 0.5579948612
+ [651] 0.5007643851 0.5803807603 0.9595779864 0.6204001078 0.6449588403
+ [656] 0.5960681918 0.5193437997 0.5497026089 0.6174484678 0.9590852255
+ [661] 0.9327685980 0.7278480149 0.5205277117 0.5566693775 0.9711175709
+ [666] 0.5052583943 0.9473323039 0.7372915968 0.7424340428 0.6102247263
+ [671] 0.5405212264 0.7944076533 0.5344194035 0.9710727813 0.6716453893
+ [676] 0.9498576468 0.5533873834 0.5292828682 0.9635067229 0.7066931994
+ [681] 0.5002255442 0.5891604218 0.9715184401 0.5506026541 0.9708111731
+ [686] 0.8536255246 0.9473745316 0.5457194426 0.5636310150 0.5117975883
+ [691] 0.9746823122 0.9425007974 0.7290668933 0.5492893304 0.7258656998
+ [696] 0.5523690588 0.5633363415 0.9365451841 0.7679918301 0.5721126596
+ [701] 0.5578403706 0.5323039297 0.9528759316 0.5190980066 0.7027724006
+ [706] 0.6066952639 0.5490786195 0.9522444741 0.5094589463 0.5417187465
+ [711] 0.5553874266 0.5541088885 0.6952305455 0.7375181431 0.5966588832
+ [716] 0.5668586068 0.5132399988 0.7275331870 0.5520884106 0.5286882547
+ [721] 0.7299572879 0.7102850671 0.5876423332 0.5670659447 0.5872253331
+ [726] 0.5525580020 0.9669793399 0.7390020073 0.7834400671 0.9497942854
+ [731] 0.8875526472 0.7070078567 0.9856037631 0.5571067030 0.7478858123
+ [736] 0.5495328487 0.6798879732 0.7811544389 0.5225475693 0.5478631172
+ [741] 0.5183850324 0.9342547000 0.9815764443 0.7934038307 0.5415179615
+ [746] 0.5288293814 0.5787740934 0.5573423122 0.8023592195 0.7752673356
+ [751] 0.7830743760 0.5520213627 0.9761803766 0.4855970133 0.7301646977
+ [756] 0.9821548121 0.5290695642 0.9107931198 0.5450700610 0.5413331139
+ [761] 0.7398165787 0.9572962735 0.5384281547 0.5428188321 0.5549843727
+ [766] 0.5606297130 0.5404880572 0.9659024129 0.5674532476 0.5899416090
+ [771] 0.5649447119 0.9745451580 0.5821703544 0.9435327886 0.5697809960
+ [776] 0.9726161665 0.5503580111 0.3856238219 0.4887130829 0.5656275857
+ [781] 0.5672161377 0.9722563215 0.5664856679 0.5467435473 0.9725088698
+ [786] 0.6002935964 0.5664841871 0.5719164587 0.9497417131 0.5752149726
+ [791] 0.5564307218 0.9594437016 0.5573322420 0.5767402983 0.5641328513
+ [796] 0.5634345179 0.4844447923 0.9634181894 0.9716161025 0.9571766871
+ [801] 0.5280781107 0.5616102969 0.5329315626 0.9589541023 0.9560415715
+ [806] 0.9538024585 0.9811626997 0.5245315177 0.9508867493 0.5726640748
+ [811] 0.9401013323 0.9232576367 0.9492101462 0.9809345377 0.5567355707
+ [816] 0.5688368611 0.5308824348 0.9485704782 0.8254730126 0.9436096261
+ [821] 0.5600461002 0.9760066145 0.5606455575 0.5611469851 0.9489801808
+ [826] 0.9404564045 0.5725778873 0.7715344133 0.9753762115 0.9628558983
+ [831] 0.7696645060 0.9330998320 0.6207396133 0.5717504981 0.5606777269
+ [836] 0.9695050417 0.5676652859 0.5561922277 0.9313414524 0.9497794493
+ [841] 0.9241232950 0.4938970088 0.9717579364 0.5718341908 0.5657619130
+ [846] 0.9051785422 0.9677081939 0.7716678568 0.9662844291 0.4001957982
+ [851] 0.5639286181 0.5546729262 0.9354463069 0.7919095020 0.5218211334
+ [856] 0.7922880326 0.5576420546 0.5227260983 0.9698347360 0.5722417227
+ [861] 0.7854643379 0.5621562998 0.9704183973 0.9813402279 0.9673597031
+ [866] 0.9741570503 0.9634250895 0.8266215572 0.5634424367 0.5651074110
+ [871] 0.5567742819 0.5757257435 0.5707453470 0.9394023196 0.9717751490
+ [876] 0.8008337087 0.9495220907 0.9674033667 0.5529237442 0.8150992059
+ [881] 0.9443332460 0.7879109312 0.7900834308 0.5697496916 0.9784380535
+ [886] 0.9075539738 0.9609993424 0.5781175815 0.9572145357 0.8205751907
+ [891] 0.9702324801 0.9545162343 0.5795043503 0.9275692483 0.5531610057
+ [896] 0.9210463421 0.9574237990 0.8829842386 0.8782959678 0.5986148977
+ [901] 0.6613797588 0.5824856140 0.4692375956 0.4736034802 0.9619373378
+ [906] 0.9665319131 0.6144318724 0.9733450796 0.4957449635 0.9435147525
+ [911] 0.5025043960 0.7752662609 0.7682360325 0.7436269795 0.9528604239
+ [916] 0.6272973185 0.8660097469 0.7988122613 0.8424230757 0.9303132763
+ [921] 0.6631730249 0.9177371559 0.9221402331 0.8649313648 0.8893488008
+ [926] 0.8648094223 0.9632672198 0.5061266580 0.5039663343 0.5487059379
+ [931] 0.9054928105 0.6111589600 0.9604908022 0.5964306340 0.5074460933
+ [936] 0.6026022113 0.6157359035 0.4319547267 0.6545265107 0.7860017802
+ [941] 0.8033864704 0.9626916934 0.6223005902 0.8805253471 0.8612862473
+ [946] 0.9813781248 0.8514013294 0.8821880605 0.8705522836 0.8777280776
+ [951] 0.5554238913 0.5890958462 0.8855396144 0.4932133233 0.5775927831
+ [956] 0.9569544382 0.8863173710 0.6271454036 0.7035599532 0.8653062197
+ [961] 0.5945433966 0.5905684779 0.7233854529 0.6724704033 0.6354797822
+ [966] 0.5478471754 0.9359925683 0.8381922606 0.9590016884 0.9150746103
+ [971] 0.5008952871 0.6673068816 0.6289701274 0.5497060878 0.9668556367
+ [976] 0.9732282146 0.9479904192 0.6656893970 0.4387577106 0.5101911822
+ [981] 0.6193934715 0.5011579350 0.8048141009 0.6315277152 0.6023297576
+ [986] 0.5348993742 0.5442424384 0.9519314840 0.9747894482 0.9674095938
+ [991] 0.9292281908 0.6385487194 0.9755508749 0.9565571451 0.8799415128
+ [996] 0.9346351717 0.9720574916 0.6072702267 0.8482406299 0.5655394694
+[1001] 0.5019370396 0.6048326774 0.6585950560 0.6544549164 0.6593302354
+[1006] 0.9589185597 0.9046982540 0.6323374998 0.5724372245 0.6379780191
+[1011] 0.8865002416 0.9676304178 0.9616323945 0.9455046994 0.8867639788
+[1016] 0.9723861682 0.5810993445 0.6299984332 0.5837849196 0.5404463232
+[1021] 0.8775837316 0.5777160970 0.8862019523 0.9850968228 0.9180152185
+[1026] 0.9586991104 0.9221473262 0.9313550582 0.5884326610 0.8591907541
+[1031] 0.6587610040 0.9788200184 0.6071585050 0.5963187011 0.6358899379
+[1036] 0.6811102189 0.5797026975 0.5667761275 0.4986320796 0.8649878783
+[1041] 0.5011214202 0.4878387994 0.4602189901 0.5661054026 0.9410971219
+[1046] 0.9141671977 0.5322403153 0.4280705681 0.4941256134 0.5852999093
+[1051] 0.9657875423 0.5588880500 0.5229357460 0.6000508255 0.6028412950
+[1056] 0.5651640791 0.8795473432 0.4297472063 0.5293540372 0.8072142111
+[1061] 0.5344209392 0.9410208513 0.5888317159 0.7002491734 0.9400968281
+[1066] 0.4888941432 0.3621455861 0.4612311622 0.5636653602 0.3610050964
+[1071] 0.5290095260 0.3431567810 0.4746724395 0.6640982099 0.6237368315
+[1076] 0.6167087532 0.4875629564 0.8520550657 0.9565794368 0.9313108468
+[1081] 0.5930434714 0.5260866453 0.9431191663 0.5945431261 0.3844979693
+[1086] 0.7497724881 0.4210686283 0.4672332048 0.5728149872 0.9169593881
+[1091] 0.7744759727 0.6183655840 0.6588652024 0.6185261504 0.5195163044
+[1096] 0.6137526472 0.4555204743 0.9599485278 0.5474191451 0.5794110991
+[1101] 0.6075795882 0.5668123090 0.4970600029 0.5764927985 0.6789431324
+[1106] 0.6539376621 0.5263730474 0.6912592523 0.6722555096 0.6180007534
+[1111] 0.6002825095 0.4870623179 0.7199168712 0.4389511166 0.8059639554
+[1116] 0.9433039315 0.5947196789 0.4879810121 0.6046732613 0.4411885027
+[1121] 0.5350514881 0.5181118886 0.6039711265 0.4809661608 0.5997301995
+[1126] 0.5655287474 0.5148106831 0.8694402230 0.5743414527 0.6071645477
+[1131] 0.7884153944 0.5118370834 0.6724551581 0.6774386692 0.9552354175
+[1136] 0.5373757087 0.8124639309 0.5235972916 0.5911220388 0.5636062832
+[1141] 0.6797728234 0.6862712018 0.5746663198 0.5749224798 0.6254099843
+[1146] 0.6164526715 0.5319195323 0.8036488536 0.4067203552 0.4429946400
+[1151] 0.9413258125 0.5124455243
+> #save(out, file = paste("KMean",i,".RData", sep="")
+> save(out, file = "Kmean3.RData")
+> 
+> proc.time()
+   user  system elapsed 
+947.461  48.425 123.516 

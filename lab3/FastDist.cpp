@@ -1,6 +1,22 @@
 #include <Rcpp.h>
 #include <cmath> 
+#include <RcppEigen.h>
+// [[Rcpp::depends(RcppEigen)]]
+
 using namespace Rcpp;
+using Eigen::Map;                   // 'maps' rather than copies 
+using Eigen::MatrixXd;                  // variable size matrix, double precision
+using Eigen::VectorXd;                  // variable size vector, double precision
+using Eigen::SelfAdjointEigenSolver;
+
+
+// [[Rcpp::export]]
+VectorXd getEigenValuesEG(Map<MatrixXd> M) {
+    SelfAdjointEigenSolver<MatrixXd> es(M);
+        return es.eigenvalues();
+        }
+
+
 
 // [[Rcpp::export]]
 double L1Dist(Rcpp::NumericVector x, Rcpp::NumericVector y)
@@ -39,3 +55,5 @@ Rcpp::NumericMatrix Distance(Rcpp::NumericMatrix x)
   }
   return d;
 }
+
+
