@@ -4,6 +4,8 @@ library(foreach)
 library(rlecuyer)
 library(microbenchmark)
 library(Rcpp)
+library(ggplot2)
+library(gridExtra)
 
 
 # 0. Load Data and register Parallel
@@ -22,7 +24,7 @@ rm(lingBinary); gc()
 ################################################################
 # 1. Define Correlation Function of Two Clusters
 ################################################################
-# 1.1. R's version
+# R's version
 cluster.CorR = function(cl1, cl2)
 {
   # correlation as suggested in Ben-Hur, Elisseeff, Guyon paper
@@ -35,6 +37,7 @@ cluster.CorR = function(cl1, cl2)
   (cor.raw - adj)/(1-adj)
 }
 
+# R's version improved. Calculate the Table only once
 cluster.CorR2 = function(cl1, cl2)
 {
   # Calculate the table function only once.
@@ -46,7 +49,9 @@ cluster.CorR2 = function(cl1, cl2)
 }
 
 # A third function to calculate Correlation using 
-# table function written in C++
+# table function written in C++. Note that this table function 
+# only works in our specific case where elements are natural 
+# numbers starting from 1 (the cluster vector).
 sourceCpp(file.path(working.directory, 'table.cpp'))
 cluster.CorCPP = function(cl1, cl2, k)
 {
@@ -67,17 +72,17 @@ MC = function(n=1e6,k=3)
   print(system.time(cluster.CorR2(x,y)))
   print(system.time(cluster.CorCPP(x,y,k)))
 }
-# MC()
-
-# 1.2. C++ version
+MC()
 
 #################################################################
 # 2. K-means Stability Test
 #################################################################
 n = nrow(data); p = round(0.8*n)
-# Generate a vector of FALSE length n, and set 80% of them to
+# Generate a vector of FALSE length n,], and set 80% of them to
 # be true randomly
-
+# Please set the size of outer loop and inner loop accordingly
+# to your machine's power. This setting was used on the SCF 
+# Cluster. 
 RNGkind("L'Ecuyer-CMRG")
 out <- foreach(i = 2:16) %dopar% {
   out.sm <- foreach(j = 1:500) %do% {
@@ -92,9 +97,40 @@ out <- foreach(i = 2:16) %dopar% {
     cl2.intersect = cl2[intersect[sub2]]
     
     cat('Finishing ', i, ".", j, 'th job.\n', sep = '')
-    cluster.Corr(cl1.intersect,cl2.intersect)
+    cluster.CorR(cl1.intersect,cl2.intersect)
   }
   unlist(out.sm)
 }
 
 save(out, file = "KMeanAccuracy5.RData")
+
+# load("KMeanAccuracy5.RData")
+out = do.call(cbind, out)
+par(mfrow=c(3,3))
+breaks = 0:20/20
+for (i in 1:9)
+{
+  hist(breaks = breaks, out[,i], main = paste("k = ", i + 1), xlab = NULL, 
+       ylab = NULL, xlim = c(0,1))
+}
+par(mfrow=c(1,1))
+# Somehow I could not do this in a forloop. It will end up
+# having all the plot the same. 
+ggplot(data=NULL) + stat_ecdf(aes(x = out[,1]), color = 1) +
+                    stat_ecdf(aes(x = out[,2]), color = 2) +
+                    stat_ecdf(aes(x = out[,3]), color = 3) +
+                    stat_ecdf(aes(x = out[,4]), color = 4) + 
+                    stat_ecdf(aes(x = out[,5]), color = 5) +
+                    stat_ecdf(aes(x = out[,6]), color = 6) +
+                    stat_ecdf(aes(x = out[,7]), color = 7) +
+                    stat_ecdf(aes(x = out[,8]), color = 8) +
+                    stat_ecdf(aes(x = out[,9]), color = 9) +
+  annotate("text", x = 0.95, y = 0.10, label = "k=3") +
+  annotate("text", x = 0.95, y = 0.60, label = "k=2") + 
+  annotate("text", x = 0.8,  y = 0.40, label = "k=4") +
+  annotate("text", x = 0.75, y = 0.70, label = "k=5") + 
+  annotate("text", x = 0.58,  y = 0.88, label = "k=10")+
+  xlim(0,1) + xlab("Cluster Correlation (Similarity)") +
+  ylab("Empirical Cumulative Distribution") +
+  ggtitle("Cumulative Distribution of Cluster Correlation for 
+          different cluster size k")

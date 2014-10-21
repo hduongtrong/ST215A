@@ -1,0 +1,919 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\begin_modules
+theorems-ams-bytype
+\end_modules
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Lab 3 - Parallelizing 
+\begin_inset Formula $k$
+\end_inset
+
+-means
+\begin_inset Newline newline
+\end_inset
+
+Stat 215A, Fall 2014
+\end_layout
+
+\begin_layout Title
+Hoang Duong
+\end_layout
+
+\begin_layout Section
+The Similarity Measure
+\end_layout
+
+\begin_layout Subsection
+Definition
+\end_layout
+
+\begin_layout Standard
+We define the correlation between two clusters according to the Ben-Hur,
+ Elisseeff, and Guyon (2001) paper.
+ Let 
+\begin_inset Formula $X=\left\{ x_{1},...,x_{n}\right\} ,x_{i}\in\mathbb{R}^{d}$
+\end_inset
+
+ be the dataset to be clustered.
+ A labeling 
+\begin_inset Formula $\mathcal{L}$
+\end_inset
+
+ is a partition of 
+\begin_inset Formula $X$
+\end_inset
+
+ into k subsets.
+ Let 
+\begin_inset Formula $C$
+\end_inset
+
+ be the representation of 
+\begin_inset Formula $\mathcal{L}$
+\end_inset
+
+ be defined as:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+C_{ij}= & \begin{cases}
+1 & \text{ if }x_{i},x_{j}\text{ belong to the same cluster}\\
+0 & \text{ otherwise}
+\end{cases}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Note that our definition of 
+\begin_inset Formula $C_{ij}$
+\end_inset
+
+ is slightly different from that of that peper, in which the diagonal term
+ is 1 not 0.
+ We think this is more intuitive, and also nicer theoretically as discussed
+ later.
+ Let 
+\begin_inset Formula $\mathcal{L}_{1},\mathcal{L}_{2}$
+\end_inset
+
+ be two labelling with 
+\begin_inset Formula $C,D$
+\end_inset
+
+ as representation matrix, respectively.
+ Then the correlation is defined as:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat}{1}
+{\rm Cor}(\mathcal{L}_{1},\mathcal{L}_{2})= & \frac{\sum_{i,j}C_{ij}D_{ij}}{\sqrt{\sum_{i,j}C_{ij}^{2}}\sqrt{\sum_{i,j}D_{ij}^{2}}}
+\end{alignat}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Calculation by Tabling (joint count)
+\end_layout
+
+\begin_layout Standard
+We note that if 
+\begin_inset Formula $\mathcal{L}$
+\end_inset
+
+ has only one cluster, i.e.
+ every element belong to the same subset, then 
+\begin_inset Formula $\sum C_{ij}^{2}=n^{2}$
+\end_inset
+
+ for the matrix have all element 1.
+ With the paper's way of defining, 
+\begin_inset Formula $\sum C_{ij}^{2}=n^{2}-n$
+\end_inset
+
+ since the diagonal term are now zero.
+ 
+\end_layout
+
+\begin_layout Standard
+If 
+\begin_inset Formula $\mathcal{L}$
+\end_inset
+
+ has k cluster, let 
+\begin_inset Formula $a_{1},...,a_{k}$
+\end_inset
+
+ be the count of elements in each cluster, then 
+\begin_inset Formula $\sum C_{ij}^{2}=a_{1}^{2}+a_{2}^{2}+...+a_{k}^{2}.$
+\end_inset
+
+ Where the paper's way of defining 
+\begin_inset Formula $\sum C_{ij}^{2}=a_{1}^{2}-a_{1}+...+a_{n}^{2}-a_{n}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+Now consider two labels vector 
+\begin_inset Formula $\mathcal{L}_{1},\mathcal{L}_{2},$
+\end_inset
+
+ each with 
+\begin_inset Formula $k$
+\end_inset
+
+ distinct labels, let 
+\begin_inset Formula $P$
+\end_inset
+
+ be the joint count, where 
+\begin_inset Formula $P_{ij}$
+\end_inset
+
+ is total of element in label 
+\begin_inset Formula $i'th$
+\end_inset
+
+ in 
+\begin_inset Formula $\mathcal{L}_{1},$
+\end_inset
+
+ and in label 
+\begin_inset Formula $j'th$
+\end_inset
+
+ in 
+\begin_inset Formula $\mathcal{L}_{2}.$
+\end_inset
+
+ Then 
+\begin_inset Formula $\sum C_{ij}D_{ij}=\sum P_{ij}^{2}.$
+\end_inset
+
+ Again with the paper's way of defining, we need to substract the diagonal:
+ 
+\begin_inset Formula $\sum C_{ij}D_{ij}=\sum(P_{ij}^{2}-P_{ij})$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Bound for the correlation
+\end_layout
+
+\begin_layout Lemma
+If 
+\begin_inset Formula $\mathcal{L}_{1},\mathcal{L}_{2}$
+\end_inset
+
+ both has k labels (clusters), then 
+\begin_inset Formula $Cor(\mathcal{L}_{1},\mathcal{L}_{2})\ge\frac{1}{k},$
+\end_inset
+
+ for correlation is defined in our way.
+ 
+\end_layout
+
+\begin_layout Proof
+We prove for the case when 
+\begin_inset Formula $k=2.$
+\end_inset
+
+ Let the joint count matrix 
+\begin_inset Formula $P=\left[\begin{array}{cc}
+a & b\\
+c & d
+\end{array}\right].$
+\end_inset
+
+ Then:
+\end_layout
+
+\begin_layout Proof
+\begin_inset Formula 
+\begin{alignat*}{1}
+{\rm Cor}(\mathcal{L}_{1},\mathcal{L}_{2})= & \frac{a^{2}+b^{2}+c^{2}+d^{2}}{\sqrt{(a+b)^{2}+(c+d)^{2}}\sqrt{(a+c)^{2}+(b+d)^{2}}}.
+\end{alignat*}
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Proof
+Now we have 
+\begin_inset Formula $(a+b)^{2}\le2(a^{2}+b^{2}).$
+\end_inset
+
+ Thus 
+\begin_inset Formula $(a+b)^{2}+(c+d)^{2}\le2(a^{2}+b^{2}+c^{2}+d^{2}).$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Proof
+Similarly 
+\begin_inset Formula $(a+c)^{2}+(b+d)^{2}\le2(a^{2}+b^{2}+c^{2}+d^{2}).$
+\end_inset
+
+ So we have the correlation is at least 
+\begin_inset Formula $1/2$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Proof
+Equality holds iff 
+\begin_inset Formula $a=b=c=d,$
+\end_inset
+
+ which intuitively does mean that there is no correlation between two clustering
+s.
+ Strictly speaking, because 
+\begin_inset Formula $a,b,c,d$
+\end_inset
+
+ are integer, this might not happens if 
+\begin_inset Formula $n$
+\end_inset
+
+ is not divisible by 4.
+ 
+\end_layout
+
+\begin_layout Standard
+Note that this lemma can be easily extended to the case when the number
+ of clusters of 
+\begin_inset Formula $\mathcal{L}_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{L}_{2}$
+\end_inset
+
+ are not equal, namely 
+\begin_inset Formula $k_{1},k_{2}.$
+\end_inset
+
+ In this case the correlation is at least 
+\begin_inset Formula $\frac{1}{\sqrt{k_{1}k_{2}}}.$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+It is also obvious that this correlation is always smaller than 1, with
+ equality holds iff 
+\begin_inset Formula $a=d=0$
+\end_inset
+
+ or 
+\begin_inset Formula $b=c=0.$
+\end_inset
+
+ This also makes sense intuitively because knowing one labelling is exactly
+ equivalent to knowing the other labelling.
+ 
+\end_layout
+
+\begin_layout Lemma
+If 
+\begin_inset Formula $\mathcal{L}_{1},\mathcal{L}_{2}$
+\end_inset
+
+ both has k labels (clusters), 
+\begin_inset Formula $n>k^{2},$
+\end_inset
+
+ then 
+\begin_inset Formula $Cor(\mathcal{L}_{1},\mathcal{L}_{2})\ge\frac{n-k^{2}}{kn-k^{2}},$
+\end_inset
+
+ for correlation is defined in the paper's way.
+ Equality holds when all element of the joint count P matrix are equal.
+ 
+\end_layout
+
+\begin_layout Proof
+Again we will prove for the case 
+\begin_inset Formula $k=2.$
+\end_inset
+
+ The correlation is defined as:
+\end_layout
+
+\begin_layout Proof
+\begin_inset Formula 
+\begin{alignat*}{1}
+{\rm Cor}(\mathcal{L}_{1},\mathcal{L}_{2})= & \frac{a^{2}+b^{2}+c^{2}+d^{2}-n}{\sqrt{(a+b)^{2}+(c+d)^{2}-n}\sqrt{(a+c)^{2}+(b+d)^{2}-n}}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Proof
+For 
+\begin_inset Formula $n=a+b+c+d.$
+\end_inset
+
+ We need to prove:
+\end_layout
+
+\begin_layout Proof
+\begin_inset Formula 
+\begin{alignat*}{1}
+\frac{a^{2}+b^{2}+c^{2}+d^{2}-n}{\sqrt{(a+b)^{2}+(c+d)^{2}-n}\sqrt{(a+c)^{2}+(b+d)^{2}-n}}\ge & \frac{n-4}{2n-4}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Proof
+Consider the inequality:
+\end_layout
+
+\begin_layout Proof
+\begin_inset Formula 
+\begin{alignat}{1}
+(2n-4)(a^{2}+b^{2}+c^{2}+d^{2}-n)\ge & (n-4)\left((a+b)^{2}+(c+d)^{2}-n\right)\\
+\Leftrightarrow(2n-4)(a^{2}+b^{2}+c^{2}+d^{2})-2n^{2}+4n\ge & (n-4)(a^{2}+b^{2}+c^{2}+d^{2})+\\
+ & +(n-4)(2ab+2cd)-n^{2}+4n\\
+\Leftrightarrow n(a^{2}+b^{2}+c^{2}+d^{2})\ge & n^{2}+(n-4)(2ab+2cd)
+\end{alignat}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Proof
+Now we have 
+\begin_inset Formula $(n-4)(a^{2}+b^{2}+c^{2}+d^{2})\ge(n-4)(2ab+2cd)$
+\end_inset
+
+ is true by the fact that 
+\begin_inset Formula $x^{2}+y^{2}\ge2xy.$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Proof
+\begin_inset Formula $4(a^{2}+b^{2}+c^{2}+d^{2})=(1+1+1+1)(a^{2}+b^{2}+c^{2}+d^{2})\ge(a+b+c+d)^{2}=n^{2}$
+\end_inset
+
+ is true by the Cauchy-Schwarz inequality.
+ So we have the inequality in (5) is true.
+ Thus (2) is true.
+ Applying (2) twice we have the proof for the Lemma in case 
+\begin_inset Formula $k=2.$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+Now the lower bound in Lemma 2 is slightly smaller than the lower bound
+ in Lemma 1, and is not as nice as the bound in Lemma 1.
+ Thus we suggest using our modified correlation formula instead for its
+ intuitiveness and theoretical property.
+ Still both of these correlation has a different bound for different k.
+ So e.g.
+ when 
+\begin_inset Formula $k=2$
+\end_inset
+
+ the correlation is at least 1/2.
+ To make things comparable across different k, we adjust the correlation
+ to make it take all possible values from 0 to 1.
+\end_layout
+
+\begin_layout Definition
+Adjusted Correlation.
+ The adjusted correlation between two cluster is defined as:
+\end_layout
+
+\begin_layout Definition
+\begin_inset Formula 
+\begin{alignat*}{1}
+AdjCor & =\frac{Cor-1/k}{1-1/k}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Definition
+For k is the number of cluster, Cor is the correlation calculated as in
+ (1).
+\end_layout
+
+\begin_layout Subsection
+Computation
+\end_layout
+
+\begin_layout Standard
+The main part in calculating the correlation as in Definition 1 is constructing
+ the joint count table.
+ R provides a function 
+\begin_inset Quotes eld
+\end_inset
+
+table
+\begin_inset Quotes erd
+\end_inset
+
+ to do that for both two dimension and one dimension.
+ 
+\end_layout
+
+\begin_layout Standard
+The naive function of using 
+\begin_inset Quotes eld
+\end_inset
+
+table
+\begin_inset Quotes erd
+\end_inset
+
+ three times for both the denominator and nominator in (1) would be our
+ first way of calculating correlation.
+ This is already very fast taking 1.988 seconds to finish for 
+\begin_inset Formula $n=10^{6},k=10.$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+The second way, we calculate the table only once for the denominator in
+ (1).
+ The two table on the bottom (marginal count) can be calculated by summing
+ the joint table along the row and along the column.
+ This way of calculating correlation take 0.608 seconds to finish for 
+\begin_inset Formula $n=10^{6},k=10.$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+The third way, we implement the table function in C++.
+ Noting that the clustering vector 
+\begin_inset Formula $\mathcal{L}$
+\end_inset
+
+ always take value from 1 to k.
+ We can write a function specifically for our case.
+ (The general function can deal with any type of data, real number or character).
+ With this way, the time taken is 0.011 seconds for 
+\begin_inset Formula $n=10^{6},k=10.$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="4" columns="3">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Time (second)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Percentage
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+R-Corr (Using Table 3 times)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1.988
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+100%
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+R-Corr (Using Table once)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.608
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+30.4%
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+CPP-Corr
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.011
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.55%
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Run-Time for Calculating Cluster Correlation for 
+\begin_inset Formula $n=10^{6},$
+\end_inset
+
+ number of cluster 
+\begin_inset Formula $k=10.$
+\end_inset
+
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The space complexity for the third function is very small, at 
+\begin_inset Formula $k^{2}$
+\end_inset
+
+ for k is the number of cluster.
+ If we were to calculate both of the matrix 
+\begin_inset Formula $C$
+\end_inset
+
+ and store in memory, the space complexity would have been 
+\begin_inset Formula $n^{2}.$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Section
+Picking number of cluster
+\end_layout
+
+\begin_layout Standard
+We follow the procedure as described in the Lab assignment and in Benhur's
+ paper.
+ The sampling ratio is 
+\begin_inset Formula $m=0.8.$
+\end_inset
+
+ We repeat 
+\begin_inset Formula $500$
+\end_inset
+
+ experiment for each cluster size from 2 to 16.
+ The histogram of correlation is shown in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "cor_cluster"
+
+\end_inset
+
+, together with the empirical cumulative distribution of the correlation
+ for each of the cluster size.
+ We see that 
+\begin_inset Formula $k=3$
+\end_inset
+
+ seems to be the optimal choice, as the correlation mostly lies around 0.9
+ to 1.0.
+ Both of the cases 
+\begin_inset Formula $k=2$
+\end_inset
+
+ and 
+\begin_inset Formula $k=4$
+\end_inset
+
+ has significantly worst performance than the case 
+\begin_inset Formula $k=3$
+\end_inset
+
+ in term of the cluster stability.
+ 
+\end_layout
+
+\begin_layout Standard
+Overall we would pick 
+\begin_inset Formula $k=3$
+\end_inset
+
+ according to this method.
+ Howeve, we would not blindly trust this method, as it is just a measurement
+ of stability with respect to pertubation of data.
+ Other clustering performance measurement for example silhouette capture
+ another aspect of 
+\begin_inset Quotes eld
+\end_inset
+
+good
+\begin_inset Quotes erd
+\end_inset
+
+ clustering, which is how compact or separated are the clusters.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Box Doublebox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename histk.png
+	scale 60
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename CDF_cluster_corr.png
+	scale 60
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Cluster Correlation Histogram
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "cor_cluster"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

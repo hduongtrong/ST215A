@@ -2,7 +2,8 @@ library(ggplot2)
 library(maps)
 library(lattice)
 library(microbenchmark)
-library("irlba")
+library(irlba)
+library(gridExtra)
 options(max.print=1000)
 
 #######################################

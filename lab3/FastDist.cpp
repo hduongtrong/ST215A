@@ -5,6 +5,7 @@ using namespace Rcpp;
 // [[Rcpp::export]]
 double L1Dist(Rcpp::NumericVector x, Rcpp::NumericVector y)
 {
+	// This function return the L1 distance normalized by n
   double result = 0.0;
   int n = x.size();
   if (y.size() != n)
@@ -24,6 +25,8 @@ double L1Dist(Rcpp::NumericVector x, Rcpp::NumericVector y)
 // [[Rcpp::export]]
 Rcpp::NumericMatrix Distance(Rcpp::NumericMatrix x)
 {
+	// This function return the L1 distance matrix of n points
+	// in d dimensional space (x has dimension n*d)
   int n = x.nrow(); 
   Rcpp::NumericMatrix d(x.nrow(), x.nrow());
   for (int i = 0; i < n; i++)
