@@ -93,6 +93,38 @@ Hoang Duong
 \end_layout
 
 \begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+In this lab, we attempt to measure the stability of K-mean using a correlation
+ metric developed in Ben-Hur, Elisseeff, and Guyon (2001).
+ In Section 2, we cover the definition, theoretical property, and computation
+ for this correlation matrix.
+ In Section 3, we apply this correlation metric on K-mean of full linguistic
+ binary dataset.
+ In Section 4, we apply this correlation metric on K-mean of dimension reduction
+ dataset (to 
+\begin_inset Formula $\mathbb{R}^{5}$
+\end_inset
+
+).
+ 
+\end_layout
+
+\begin_layout Standard
+Please refer to Table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "pca_kmea"
+
+\end_inset
+
+ as a description of the two programs.
+ 
+\end_layout
+
+\begin_layout Section
 The Similarity Measure
 \end_layout
 
@@ -147,7 +179,7 @@ Note that our definition of
 \begin_inset Formula $C_{ij}$
 \end_inset
 
- is slightly different from that of that peper, in which the diagonal term
+ is slightly different from that of that paper, in which the diagonal term
  is 1 not 0.
  We think this is more intuitive, and also nicer theoretically as discussed
  later.
@@ -255,7 +287,7 @@ Now consider two labels vector
 \begin_inset Formula $\sum C_{ij}D_{ij}=\sum P_{ij}^{2}.$
 \end_inset
 
- Again with the paper's way of defining, we need to substract the diagonal:
+ Again with the paper's way of defining, we need to subtract the diagonal:
  
 \begin_inset Formula $\sum C_{ij}D_{ij}=\sum(P_{ij}^{2}-P_{ij})$
 \end_inset
@@ -824,8 +856,8 @@ Overall we would pick
 \end_inset
 
  according to this method.
- Howeve, we would not blindly trust this method, as it is just a measurement
- of stability with respect to pertubation of data.
+ However, we would not blindly trust this method, as it is just a measurement
+ of stability with respect to perturbation of data.
  Other clustering performance measurement for example silhouette capture
  another aspect of 
 \begin_inset Quotes eld
@@ -907,6 +939,435 @@ name "cor_cluster"
 \end_layout
 
 \begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Extra - K-mean Stability on PCA of Data
+\end_layout
+
+\begin_layout Subsection
+Theory
+\end_layout
+
+\begin_layout Standard
+Since our original data is in the degree of 468 dimension (though each dimension
+ is only a binary value), we think it makes more sense to reduce the dimension
+ of the data first before attempting to cluster them.
+ First we define the similarity measure on each observation the same way
+ we did in Lab 2.
+ Consider the binary data where each person is represented by a 468 binary
+ data, for the first element denotes whether she chooses option 1 in question
+ 1, second element denotes whether she chooses option 2 in question 1 and
+ so on.
+ 
+\end_layout
+
+\begin_layout Standard
+The similarity measure is defined as:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+D(X_{i},X_{j})= & \frac{1}{134}\sum_{i=1}^{468}\left|x_{ik}-x_{ik}\right|
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We choose 134 as the normalizing factor because the summation is at most
+ 134, not 468 as there are 67 questions.
+ 
+\end_layout
+
+\begin_layout Standard
+This measure is then transformed to take into account the fact that we are
+ more sure about small distances than larger ones.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+P(X_{i},X_{j})= & 1-\exp(-D(X_{i},X_{j}))
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We then apply the standard procedure of multidimensional scaling, to obtain
+ the a set of point in 
+\begin_inset Formula $\mathbb{R}^{5}$
+\end_inset
+
+ that best preserves this similarity distance.
+ K-mean is then ran on this projected dataset in 
+\begin_inset Formula $\mathbb{R}^{5}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Subsection
+Computation
+\end_layout
+
+\begin_layout Standard
+We use the built in R dist function to calculate the Manhattan distance.
+ We attempted to write this in C++ but it was not as fast as the builtin
+ R dist function as it also call C function.
+ For calculating a few PCA, the routine ARPACK is the de facto library.
+ In R there is a wrapper rARPACK that provides an interface to use ARPACK.
+ We find calculating a few eigenvalues on rARPACK to be around 5 times faster
+ than doing that with R irlba package.
+ We think this is because irlba is written in R, while ARPACK is written
+ in FORTRAN, and is industry standard for doing sparse SVD.
+ 
+\end_layout
+
+\begin_layout Standard
+We need to run two loops, the outer loop is on the cluster size k, the inner
+ loop is for multiple simulations.
+ We think paralleling the inner loop makes more sense as they are similar,
+ each should takes the same time to finish.
+ The outer loop on the other hand is not homogeneous, as the one for higher
+ k takes a much longer time to finish.
+ In our earlier run of K-mean without dimension reduction, 
+\begin_inset Formula $k=2,3$
+\end_inset
+
+ takes only a couple hours to finish, while 
+\begin_inset Formula $k=15,16$
+\end_inset
+
+ takes more than 10 hours to finish.
+ This is for 500 simulations.
+\end_layout
+
+\begin_layout Standard
+Now after doing dimension reduction to 5 dimensions, K-mean runs really
+ fast.
+ We try with 9 values of 
+\begin_inset Formula $k$
+\end_inset
+
+ from 
+\begin_inset Formula $2$
+\end_inset
+
+ to 10, doing 128 simulation on each, and it takes 2 minutes (using 32 cores).
+\end_layout
+
+\begin_layout Standard
+Table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "pca_kmea"
+
+\end_inset
+
+ summaries the two algorithms.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="8" columns="2">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Section 3
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Section 4
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Manhattan Distance, Similarity Matrix, First 5 eigenvector/values
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+K-mean on 45000*468 binary matrix
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+K-mean on 45000*5 real matrix
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+k = 2,3,...,16
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+k = 2,3,...,10
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Number of simulation: 500
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Number of simulation: 128
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Use 15 cores for 15 k's (outer loop)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+ Use 32 cores for 128 simulation (inner loop)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Time: 11 hours
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Time: 3 Hours on the first task.
+ 15 minutes on the K-mean
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Choose k = 3
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Choose k = 6
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Comparison of two programs
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "twoprograms"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Result
+\end_layout
+
+\begin_layout Standard
+The histogram of cluster correlation for each k is reported in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "pca_kmea"
+
+\end_inset
+
+.
+ We see now that for the dimension reduction data, 
+\begin_inset Formula $k=6$
+\end_inset
+
+ is a better choice in term of stability with respect to random sampling
+ data.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Box Doublebox
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /Users/hd/Desktop/Screen Shot 2014-10-21 at 2.00.40 PM.png
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+K-mean Cluster Correlation on Dimension 
+\lang american
+Reduction
+\lang english
+ Data
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "pca_kmea"
+
+\end_inset
+
 
 \end_layout
 
