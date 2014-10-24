@@ -2,6 +2,7 @@ library(dplyr)
 library(ggplot2)
 
 setwd(file.path(Sys.getenv("GIT_REPO_LOC"), "classes/STAT215A_Fall2013/gsi_lab4/Lab"))
+setwd("~/Dropbox/School/ST215/Lab/lab4/image_data/")
 # Get the data for three images
 
 image1 <- read.table('image1.txt', header=F)

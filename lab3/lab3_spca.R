@@ -22,3 +22,5 @@ rm(H); rm(X); gc();
 
 out = eigs_sym(D,5)
 save(out, file = "PC2.RData")
+
+ggplot()
