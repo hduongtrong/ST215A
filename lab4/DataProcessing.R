@@ -1,4 +1,4 @@
-setwd("~/Dropbox/School/ST215/Lab/lab4/image_data/")
+setwd("~/Dropbox/School/ST215/Lab/lab4/")
 options(max.print = 1000)
 
 #########################################################################
@@ -14,8 +14,11 @@ collabs <- c('y','x','label','NDAI','SD','CORR','DF','CF','BF','AF','AN')
 names(image1) <- collabs
 names(image2) <- collabs
 names(image3) <- collabs
-
-# Function to sample data
+rm(collabs)
+# Function to sample data. E.g. It uses 60% of rows from image1
+# and image2 randomly as train data, uses the remaining 40%
+# rows from image1 and image2 as test data. Image3 is kept
+# as a complete out of sample testing dataset. 
 getTrainTest = function(list.images, train.percentage = 0.60)
 {
   set.seed(1); n.images = length(list.images) 
@@ -37,3 +40,5 @@ getTrainTest = function(list.images, train.percentage = 0.60)
 }
 l = getTrainTest(list(image1, image2))
 train = l[[1]]; test = l[[2]]; rm(l);
+
+

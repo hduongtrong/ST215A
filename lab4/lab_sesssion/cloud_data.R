@@ -46,3 +46,12 @@ cor(image2)[3:11,3]
 #####################
 lmfit = lm(label ~ NDAI + SD + CORR + DF + CF + BF + AF + AN, data = image1)
 mi.empirical(image1$label, image1$NDAI)
+
+ggplot(data = train) + 
+  geom_boxplot(aes(factor(label), CORR))
+ggplot(data = train) +
+  geom_density(aes(x = NDAI))
+qqnorm(train$AN)
+qqline(train$logSD)
+cor(train$SD, train$label)
+
