@@ -19,7 +19,7 @@ head(image1)
 summary(image1)
 
 # The raw image (red band, from nadir).
-ggplot(image3) + geom_point(aes(x=x, y=y, color=AN))
+ggplot(train[train$k == 1,]) + geom_point(aes(x=x, y=y, color=CF))
 
 # The classification.
 ggplot(image1) + geom_point(aes(x=x, y=y, color=factor(label)))

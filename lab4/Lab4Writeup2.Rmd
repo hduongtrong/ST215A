@@ -1,0 +1,326 @@
+---
+title: "Lab 4- Cloud Identification"
+author: "Huang Trong, Rahul Verma, Andre Waschka"
+date: "November 7, 2014"
+output: html_document
+---
+
+#1. Introduction
+
+When it comes to understanding and predicting global climate change, identification of cloud cover is a vital portion of the equation. To do this, scientists create algorithms using satellite images to distingush between clouds and non-clouds. Since most of these models use the reflecting light from the sun as a primary distingusher, clouds are easy to identify because they reflect light at a much higher rate than land or ocean. However, an issue arises when trying to identify cloud cover in polar regions. This is due to the snow and ice reflecting sun in a similar way to clouds and thus making differentiation much more difficult. Our goal is to use the few images that we have that were labeled by an expert to train a model to be able to identify clouds vs non-clouds in polar regions.
+
+#2. Exploratory Data Analysis
+
+```{r,echo=FALSE,message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(corrplot)
+library(glmnet)
+auc = glmnet::auc
+
+#setwd("/Users/andrewaschka/Desktop/Cloud/Stats-215---Lab-4")
+setwd("~/Dropbox/School/ST215/lab4p/")
+# Get the data for three images
+image1 <- read.table('image1.txt', header=F)
+image2 <- read.table('image2.txt', header=F)
+image3 <- read.table('image3.txt', header=F)
+
+# Add informative column names
+collabs <- c('y','x','label','NDAI','SD','CORR','DF','CF','BF','AF','AN')
+names(image1) <- collabs
+names(image2) <- collabs
+names(image3) <- collabs
+rm(collabs)
+
+#load("~/Downloads/test.RData")
+#load("~/Downloads/train.RData")
+load("test.RData")
+load("train.RData")
+
+
+```
+
+```{r,echo=FALSE}
+par(mfrow=c(1,1))
+traincor<-train[,-(1:2),drop=FALSE]
+traincor$blockid<-NULL
+
+N<- cor(traincor)
+corrplot.mixed(N)
+
+```
+
+Figure 1. Heat and correlation plot of the training data combined to visually and quantitatively see the relationships between the variables.
+
+
+
+```{r,echo=FALSE, fig.width=3, fig.height=2}
+#For training data
+# Class conditional densities.
+
+cloud<- label <-train$label
+cloud<- 2*label - 1
+ggplot(train) + geom_density(aes(x=DF, group=factor(label), fill=factor(cloud)), alpha=0.5)
+ggplot(train) + geom_density(aes(x=CF, group=factor(label), fill=factor(cloud)), alpha=0.5)
+ggplot(train) + geom_density(aes(x=BF, group=factor(label), fill=factor(cloud)), alpha=0.5)
+ggplot(train) + geom_density(aes(x=AF, group=factor(label), fill=factor(cloud)), alpha=0.5)
+ggplot(train) + geom_density(aes(x=AN, group=factor(label), fill=factor(cloud)), alpha=0.5)
+
+
+```
+
+Figure 2. Class conditional density plots of the training data on the five camera angles.
+
+
+```{r,echo=FALSE,fig.width=3, fig.height=2}
+ggplot(train) + geom_density(aes(x=NDAI, group=factor(label), fill=factor(cloud)), alpha=0.5)
+ggplot(train) + geom_density(aes(x=SD, group=factor(label), fill=factor(cloud)), alpha=0.5)
+ggplot(train) + geom_density(aes(x=CORR, group=factor(label), fill=factor(cloud)), alpha=0.5)
+```
+
+Figure 3. Class conditional density plots of the training data on NDAI, SD, and CORR.
+
+After some preliminary exploratory data analysis, it quickly became clear that our first major decision would be to decide what to do with the portions of the image where the expert was uncertain whether it was a cloud or not. As a result, our figures and plots show both options. However, after deliberation, it was decided that the zero's(Unlabeled) data should be removed. This makes sense because a model should not work to predict unlabeled areas of the image. Instead it should give a prediction of cloud or not cloud and then give some measure of confidence.
+
+Once this decision was made, we were able to look at the relationship between the radiances of different camera angles. After looking at the correlations between each of the five camera angles we can see that the radiances of cameras closest to each other are much more similar to each other than to ones with drastically different angles. When the focus is shifted to the label and the radiances we see that the range of radiances is much larger for clouds than for not cloud. Furthermore for all camera angles we notice a bi-modal distribution of radiances for not cloud. Finally we looked to see if there was a difference based on the features NDAI, SD, and CORR. From the correlation plot above we can see that all three features' correlations consistently become more negative as the camera angles face more directly downward. However, CORR has the largest changes in correlation between camera angles, going from positive in DF, to the strongest negative correlation of all the features in AN.
+
+#3. Modeling
+
+###3.1 Feature Selection
+To predict what are the three best features to predict the presence of clouds, we used several methods. The first and simplest was to look at the heat map and the conditional density plots. From these diagrams, we came to the conclusion that NDAI, CORR, and AF were the best at predicting the truth. NDAI was the clear favorite visually. It had the strongest blue color of all of the features in the heat map (Figure 1) and it had clear separation in the density plot in Figure 3. CORR seemed to have a similar correlation with SD based on the heat map so it was necessary to observe the density plots to make a final decision. From these plots it seemed that CORR had more seperated peaks than SD. Finally, AF was selected as the radiance angle. Looking at the heat map, AF and AN seemed to be the same color with a negative correlation so it was necessary to compare their density plots. Again these seemed very close. However it looked like AF had a slightly larger green(cloud) tail so we decided upon AF over AN.
+
+The second method that was used to identify the three best features was to simply look at the correlation between label and the remaining eight features. These numbers can be seen in Figure 1. Selecting the three variables with the three largest correlations would result in NDAI, CORR, and AF being selected. Choosing NDAI and CORR was simple because they had the two largest correlations. However deciding between AF and AN was difficult. Since the correlations with label are the same, ideally we would choose the one that was least correlated with NDAI and CORR. In this situation NDAI is more correlated with AF than AN and CORR is more correlated with AN than AF. As a result we decided to choose AF due to its larger difference in correlation with CORR.
+
+Finally, we try to use a measure that is more relevant to binary variable. In term of performance measure, accuracy is a simple yet effective measurement. It is symmetric with respect to the zero and one class, unlike some other measurements with emphasizes one class more than te other. In our case, the problem of detecting cloud and no cloud is symmetric, so accuracy is an appropriate measure. Accuracy simpy means the percentage of time a model classifies correctly. The only downside is that most models return a probability based prediction, and accuracy depends on the threshold at which one cut the probability to classify as positive and negative. One way to fix this dependence on threshold is to pick the threshold with the best possible accuracy. 
+
+The other way is to use area under curve (AUC) of the ROC curve. This measure is independent of threshold. The continuous variable (predictor) does not need to be between 0 and 1. On the down side, AUC is hard to generalize for the case of more than two classes. Also, naive AUC calculation that is based on rectangular approximation can be slow, at $O(n^2)$. If we use the probability based method, and sort the data with respect to the continuous variable, we can get $O(n\log n)$ time. With the AUC approach, we can pick the three inputs with the highest AUC with respect to the training label. The AUC for each input with respect to the label for the all three images (after getting rid of zero labels) is as followed:
+
+| AUC          | NDAI   | SD       | CORR    | DF     | CF         | BF        | AF           | AN     |
+|--------------|-------:|----------|---------|--------|------------|-----------|--------------|--------|
+| Running Time | 0.9344 | 0.9043   | 0.8160  | 0.5215 | 0.3334     | 0.2148    | 0.1858       | 0.1928 |
+
+Note that AUC is a measurement of between 0 and 1, which 1 can be thought of perfect positive correlation, 0 is similar to perfect negative correlation, and 0.5 means no correlation. Based on the table, we would pick the three most "correlated" inputs, which are NDAI, SD, and CORR. AF's performance is quite closed to that of CORR, as AUC 0.1858 is equivalent (opposite sign) of 1 - 0.1858 = 0.8142. 
+
+Throughout this paper, we will use AUC as the main measurement for to choose the best model. When we need to get the actual predicted value of 0 and 1 instead of continuous predicted value (e.g. predicted probability), we will use a threshold, and measure performance by accuracy. We also note that just using raw NDAI as a predictor for classifying cloud and no cloud, the AUC is already 0.9344. Any model that performs not as good as this very naive approach should be discarded. And if fact as we see later, many of the simple models only have performance slightly higher than that benchmark. Put it in another perspective, the scientists who designed this NDAI signal have done a great job transforming somewhat weak radiances signal into a powerful signal. 
+
+###3.2. Overview of Classifiers
+When solving a classification problem, we are presented with an abundance of choices to make. Following is a broad breakdown by:
+
+I. Model
+
+  1. Linear Regression  
+  2. Logistic Regression  
+  3. LDA, QDA
+  4. SVM
+  5. naiveBayes
+  6. randomForest
+  7. neural network
+II. Feature Engineering
+  1. Include polynomial term, interactive term, e.g. $x_i ^2, x_i x_j$
+  2. Log-Rescale, squareroot rescale: $sign(x) \log (|x|+1)$, $sign(x) \sqrt(|x|)$
+III. Regularization
+  1. L1 loss, L1 then OLS on selected variables, OLS then L1 on selected variables
+  2. L2 loss
+  3. L1 + L2 (Elastic Net)
+  4. Adaptive L1 (weighted L1)
+  5. Forward stepwise, backward stepwise selection
+IV. Model Selection, Choosing Model Parameter
+  1. Cross Validation
+  2. AIC, AICc, BIC
+V. Performance Measure
+  1. AUC
+  2. Accuracy
+  3. Logloss, deviance, mutual information
+  4. F1 Score, Mean Average Precision, Cohen's Kappa
+VI. Optimization Algorithm
+  1. Gradient Descent family: Stochastic Gradient Descent, Coordinate Descent
+  2. Newton Method family: Quasi-Newton, BFGS
+  3. LARS (for L1 and Elastic Net)
+  
+Of course not all combination is possible, for example LAR algorithm is only applied for L1 and Elastic Net regularization. Still, we are left with a very wide range of options to choose from. For the scope of this lab, we won't have time to study and implement all the possible combination, and so we heuristically restrict ourselves to some specific set of options. 
+
+For most of the model, we try out of the box implementation with out much calibration. We pay more attention to Logistic Regression, and SVM in particular, which represenst the statistical approach, and optimization approach to classification respectively. For Logistic 
+Regression, we try polynomial and interactive terms, L1 regularization with cross validation as the tool for picking the best regularization. Cross validation uses Area Under Curve of ROC curve as the measurement. We use the "glmnet" package, which impliments Coordinate Descent algorithm. Following is the list of models that we run on our dataset:
+
+Model Specification:
+
+1. Linear Regression: The response variable (binary 0 and 1 in our case) is a  linear function of X with white noise. 
+2. Logistic Regression: Condition on X, the log odd is linear function of X.
+3. naiveBayes: The input X's are conditional independent given Y.
+4. Quadratic Discriminant Analysis: X for each group is Multivariate Gaussian
+5. Neural Network
+6. Random Forest
+7. Logistic with L1 Loss, CV on AUC
+8. Logistic with interactive terms
+9. Logistic with interactive terms, L1 Loss, CV on AUC, 
+10. Support Vector Machine
+
+Some of the models are more of an optimization procedures than a statistical models, namely Neural Network, Random Forest (decision tree), and Support Vector Machine. As such there are really no assumption. We instead check the model assumption for the probabilistic models. For Linear Regression, it is clear that the assumption will not be met for binary responses. However, as we will see Linear Regression thought of as a Least Square method can still perform very well. 
+
+We check the model assumption for Logistic Regression. The log-odd should be linear in each of the inputs. 
+```{r,echo=FALSE, message = FALSE}
+source("PerformanceMetrics.R")
+logreg.fit = glm(label ~ NDAI + SD + CORR + DF + CF +
+                              BF   + AF + AN,
+                      data = train, family = binomial(link = "logit"))
+
+label.hat2 = predict(logreg.fit, train, type = "link")
+
+par(mfrow=c(2,2))
+
+plotLogoddTruthPreds(train$label, train$NDAI, .xlab="NDAI")
+plotLogoddTruthPreds(train$label, train$SD, .xlab="SD")
+plotLogoddTruthPreds(train$label, train$CORR, .xlab = "CORR")
+plotLogoddTruthPreds(train$label, label.hat2, .xlab = "Yhat")
+```
+
+Looking at the plots of log-odd (in buckets) versus each of the inputs, we see that the plot of log odd with respect to NDAI, SD, and CORR are not linear. Including quadratic terms would help. This explains why we see a higher performance in QDA, or non-linear methods such as random forest and neural network. 
+
+For naive Bayes, condition on the label equal 1, we have the correlation of inputs are
+```{r,echo=FALSE,fig.width=5, fig.height=5}
+
+traincor1<-train[,-(1:3),drop=FALSE][train$label==1,]
+traincor1$blockid<-NULL
+
+N<- cor(traincor1)
+corrplot.mixed(N)
+```
+
+It is clearly that the correlation are quite high, thus the assumptions are not met. But still naive Bayes method often performs quite well even when the assumptions are not met. 
+
+For QDA, we need the inputs to be Gaussian condition on the class. Looking at the marginal Q-Q plot with respect to the normal quantiles, we see that none of the inputs have a linear Q-Q plot. So again the assumptions are not met. 
+```{r,echo=FALSE}
+par(mfrow=c(2,2))
+qqnorm(train$NDAI, ylab = "NDAI")
+qqnorm(train$SD, ylab = "SD")
+qqnorm(train$CORR, ylab = "CORR")
+qqnorm(train$AN, ylab = "AN")
+```
+
+### 3.3. Cross Validation Result for Different Classifications
+For our data, the rows are not i.i.d. As such we have to be more careful in choosing the train set, test set, and cross validation sets. Our end goal in this data problem is to be able to classify cloud and no cloud in new images. We only have three images, one way to create more observations is to divide each image into k by k smaller images. Doing this, each block can be thought of as a separate image, and we have $3k^2$ images. These newly created images are not totally independent; still, dividing three images into small images should help us in building a more stable model on new images.
+
+In our data, we choose k = 3, as such there are 27 small images. We choose 15 blocks at random to use as train, and leave the remaining as test. We do this 200 times, each time choosing 15 blocks at random, calculating the AUC of the predictor with respect to the label in test set. The result is reported in the box plot below.  
+
+```{r, echo=FALSE}
+load("./LinearModel/LinearModel.RData")
+#load("~/Downloads/LinearModel.RData")
+LinearModelAUC = unlist(out)
+df1 = data.frame(model = rep("LinearModel", length(LinearModelAUC)), 
+                AUC = LinearModelAUC)
+#################
+load("./LogisticModel/LogisticModel.RData")
+#load("~/Downloads/LogisticModel.RData")
+LogisticModelAUC = unlist(out)
+df2 = data.frame(model = rep("LogisticModel", length(LogisticModelAUC)), 
+                AUC = LogisticModelAUC)
+#################
+load("./naiveBayes/naiveBayes.RData")
+#load("~/Downloads/naiveBayes.RData")
+naiveBayesAUC = unlist(out)
+df3 = data.frame(model = rep("naiveBayes", length(out)),
+                 AUC = naiveBayesAUC)
+#################
+load("./QDA/QDA.RData")
+#load("~/Downloads/QDA.RData")
+QDAAUC = unlist(out)
+df4 = data.frame(model = rep("QDA", length(QDAAUC)),
+                AUC = QDAAUC)
+##################
+load("./NeuralNet/NeuralNet.RData")
+#load("~/Downloads/NeuralNet.RData")
+NeuralNetworkAUC = sapply(out, unlist)[8,]
+df5 = data.frame(model = rep("NeuralNet", length(out)),
+                 AUC = NeuralNetworkAUC)
+##################
+load("./RandomForest/RandomForest.RData")
+#load("~/Downloads/RandomForest.RData")
+df6 = data.frame(model = rep("RandomForest", nrow(RandomForestAUC)),
+                 AUC = RandomForestAUC[,7])
+
+
+##################
+load("./LogitCV/LogitCV.RData")
+#load("~/Downloads/LogitCV.RData")
+LogitCVAUC = unlist(out)
+df7 = data.frame(model = rep("LogitCV", length(out)),
+                 AUC = LogitCVAUC)
+
+###################
+load("./LogitPoly/LogitPoly.RData")
+#load("~/Downloads/LogitPoly.RData")
+LogitPolyAUC = unlist(out)
+df8 = data.frame(model = rep("LogitPoly", length(out)),
+                 AUC = LogitPolyAUC)
+
+
+####################
+load("./LogitPolyCV/LogitPolyCV.RData")
+#load("~/Downloads/LogitPolyCV.RData")
+LogitPolyCVAUC = unlist(out)
+df9 = data.frame(model = rep("LogitPolyCV", length(out)),
+                AUC = LogitPolyCVAUC)
+#####################
+load("./SVM/SVM.RData")
+df10 = data.frame(model = rep("SVM", length(SVMAUC)),
+                  AUC = SVMAUC)
+
+df = rbind(df1, df2, df3, df4, df5, df6, df7, df8, df10)
+ggplot(data = df, aes(x = model, y = AUC)) + geom_boxplot() + coord_flip()
+
+```
+
+We see that random forest have the highest peformance, followed by logistic with interactive terms, neural network, and QDA. The class of simple models namely linear model, logistic model, and naive Bayes are not as good but not too far behind. 
+
+In term of run time, we have the following table:
+
+| Model        | Linear | Logistic | PolyLogit | QDA  | NaiveBayes | NeuralNet | RandomForest | SVM    |
+|--------------|-------:|----------|-----------|------|------------|-----------|--------------|--------|
+| Running Time | 0.14   | 1.32     | 5.30      | 0.58 | 1.70       | 20.00     | 42.92        | 2hr    |
+
+We see that in general simple methods run much faster. QDA seems to have a good combination of performance and computational cost. The SVM was run on the cluster while the remainder of the models were run on personal computers. The 2 hours shown was approximate and only for one job.
+
+###3.4. Convergence of Parameter Estimation
+
+Since random forest model does not really return any meaningful parameters, we will work on the logistic regression model for this subsection. We will look at the estimated $\beta$, when using one block to train, two blocks, and so on until we use all 27 blocks to train the logistic model. The inputs are standardized to zero mean and unit variance. 
+```{r, echo = FALSE}
+load("./LogitConvergence/LogitConvergence.RData")
+beta.hat = sapply(out, unlist)
+par(mfrow=c(3,3))
+xnames = names(train)[3:11]; xnames[1] = "(Intercept)"
+for (col.name in xnames)
+{
+  plot(beta.hat[col.name,1:108], xlab = "", ylab = col.name, type = "l", ylim = c(-4, 10))  
+}
+```
+We see that the model is quite stable with respect to adding more blocks into the training data. 
+
+
+
+### 3.5. Missclasification Error
+
+We first see missclassification error with respect to region in the image. We run Random Forest model on 15 blocks and then use the model to predict both the training and testing data. The training region is in the black boxes. The blue signifies cloud, and red signifies no cloud. 
+
+
+```{r, echo = FALSE}
+
+load("random.forest.yhat.RData")
+load("logistic.yhat.RData")
+#load("~/Downloads/random.forest.yhat.RData")
+
+```
+
+```{r,echo=FALSE,fig.height=4,fig.width=4}
+yhat1 = cutOff(random.forest.yhat)
+yhat2 = cutOff(logistic.yhat)
+plot.missclassified(img.id = 1, preds = yhat1)
+plot.missclassified(img.id = 1, preds = yhat2)
+plot.missclassified(img.id = 2, preds = yhat1)
+plot.missclassified(img.id = 2, preds = yhat2)
+plot.missclassified(img.id = 3, preds = yhat1)
+plot.missclassified(img.id = 3, preds = yhat2)
+```
+
+From the images above we can see that our models seem to do a pretty good job of predicting. However there are a few areas where we run into problems. One consistant problem is our model predicting clouds on land that is on the edge of the unknown(the white areas). However, once we get inland, our model does a very good job of consistantly predicting correctly. Another problem is that it was trying to predict land in the middle of clouds. There seems to be a scattershot of error throughout most large clouds where the model sprinkles land throughout a cloud. The one very interesting feature of Random Forest is that it did not make any errors in the training blocks. This may be because Random Forests can overfit to the training data.
+
+Now we compare the result with Logistic Regression model. 
