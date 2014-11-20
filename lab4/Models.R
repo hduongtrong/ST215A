@@ -24,7 +24,7 @@ label.hat = predict.lm(linreg.fit, test)
 
 ### Measuring Linear Regression Performance
 auc(test$label, label.hat)
-accuracy(cutOff(label.hat,0.5), test$label)
+accuracy(cutOff(label.hat, 0.5), test$label)
 # meanError(cutOff(label.hat), test$label), used for case of 3 classes
 ### Picking the best cut off threshold
 cutOffGridSearch(test$label, label.hat, method = accuracy)
@@ -34,7 +34,7 @@ cutOffGridSearch(test$label, label.hat, method = accuracy)
 #######################################################################
 
 logreg.fit = glm(label ~ NDAI + SD + CORR + DF + CF +
-                              BF   + AF + AN,
+                              BF + AF + AN,
                       data = train, family = binomial(link = "logit"))
 
 label.hat2 = predict(logreg.fit, test, type = "response")
