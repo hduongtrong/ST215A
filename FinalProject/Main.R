@@ -11,6 +11,7 @@ source("ModelSelectCriterions.R")
 .main. = TRUE
 if (.main.) .load.data = TRUE
 # If both are set to FALSE, only functions are loaded
+alpha = 0.8
 
 ###############################################################################
 ### 1. Functions
@@ -88,7 +89,7 @@ RunGlmnetIC = function(X = X, Y = Y, train = train, val = val,
   tm = Sys.time()
   glmnet.fit = glmnet(X[train, ], Y[train, Y.col], 
                       family = "gaussian", standardize = FALSE, 
-                      intercept = TRUE)
+                      intercept = TRUE, alpha = alpha)
   yhats = predict(glmnet.fit, X[train, ])
   IC = SelectModel(Y[train, Y.col], yhats, glmnet.fit$df, criterion)
   best.model = which(IC == min(IC))[1]
@@ -115,7 +116,7 @@ RunGlmnetCV = function(X = X, Y = Y, train = train, val = val,
   tm = Sys.time()
   glmnetcv.fit = cv.glmnet(X[train, ], Y[train, Y.col], 
                       family = "gaussian", standardize = FALSE, 
-                      intercept = TRUE, nfolds = 5)
+                      intercept = TRUE, nfolds = 5, alpha = alpha)
   yhat = predict(glmnetcv.fit, X[val, ], s = glmnetcv.fit$lambda.min)
   best.model = which(glmnetcv.fit$lambda == glmnetcv.fit$lambda.min)[1]
   cat("Running Time (s): ", round(Sys.time() - tm, 2), Y.col, "\n")
@@ -152,7 +153,7 @@ escv.glmnet = function(X = X, Y = Y, train = train, val = val, Y.col = 1,
     fold.in = train[-fold.idx]
     fold.out[[i]] = train[fold.idx]
     cv[[i]] = glmnet(X[fold.in, ], Y[fold.in, Y.col], family = "gaussian", 
-                     standardize = FALSE, intercept = TRUE)
+                     standardize = FALSE, intercept = TRUE, alpha = alpha)
   }
   
   tau.matrix = list()
@@ -161,13 +162,15 @@ escv.glmnet = function(X = X, Y = Y, train = train, val = val, Y.col = 1,
     tau.matrix[[i]] = colSums(abs(cv[[i]]$beta))
   }
   tau.matrix = matrix(unlist(tau.matrix), nrow = length(tau.matrix[[1]]))
-  list.tau = seq(from = min(es), to = max(es), length.out = ntaus)
-  es = sapply(list.tau, function(x) ESCVHelper(cv, tau.matrix, x, verbose = verbose))
+  list.tau = seq(from = min(tau.matrix), to = max(tau.matrix), 
+                 length.out = ntaus)
+  es = sapply(list.tau, function(x) ESCVHelper(cv, tau.matrix, x, 
+                                               verbose = verbose))
   best.tau = list.tau[which.min(es)]
   
   # Now fit the model with best tau (L1 norm) parameter
   model = glmnet(X[train, ], Y[train, Y.col], family = "gaussian", 
-                 standardize = FALSE, intercept = TRUE)
+                 standardize = FALSE, intercept = TRUE, alpha = alpha)
   all.taus = colSums(abs(model$beta))
   best.tau.idx = which.min(abs(all.taus - best.tau))
   yhat = predict(glmnet.fit, X[val, ], s = model$lambda[best.tau.idx])
@@ -239,17 +242,17 @@ if (.main. == TRUE)
   dfAIC$MS = 'AIC'; dfAICc$MS = 'AICc'; dfBIC$MS = 'BIC'; dfCV$MS = 'CV'
   dfES$MS = 'ESCV'
   df = rbind(dfAIC, dfAICc, dfBIC, dfCV, dfES)
-  png("./graphs/Lasso_Cor1.png")
+  png("./graphs/Lasso_Cor2.png")
   ggplot(data = df) + geom_line(aes(x = voxel,  y = Cor, color = MS))
   dev.off()
-  png("./graphs/Lasso_MSE1.png")
+  png("./graphs/Lasso_MSE2.png")
   ggplot(data = df) + geom_line(aes(x = voxel,  y = MSE, color = MS))
   dev.off()
-  png("./graphs/Lasso_Lambda1.png")
+  png("./graphs/Lasso_Lambda2.png")
   ggplot(data = df) + geom_line(aes(x = voxel,  y = Lambda, color = MS)) +
     scale_y_log10()
   dev.off()
-  png("./graphs/Lasso_Df1.png")
+  png("./graphs/Lasso_Df2.png")
   ggplot(data = df) + geom_line(aes(x = voxel,  y = DF, color = MS)) +
     scale_y_log10()
 }
