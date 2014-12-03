@@ -1,4 +1,5 @@
 GetRSS  = function(y, yhat) sum((y - yhat)^2)
+GetMSE  = function(y, yhat) sum((y - yhat)^2)/length(y)
 GetRSSs = function(y, yhats) apply(yhats, 2, function(.yhat) GetRSS(y, .yhat))
 GetAIC  = function(RSS, n, k) n*log(RSS/n) + 2*k 
 GetBIC  = function(RSS, n, k) n*log(RSS/n) + log(n)*k
@@ -15,6 +16,3 @@ SelectModel = function(y, yhats, dfs, criterion)
   n = length(y)
   apply(cbind(RSSs, dfs), 1, function(x) criterion(x[1], n, x[2]))
 }
-
-
-
