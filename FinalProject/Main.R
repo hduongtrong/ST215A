@@ -141,9 +141,6 @@ ESCVHelper = function(cv, df.tau, tau, verbose = TRUE)
   var.ytau/sum(yhat.m^2)
 }
 
-escv.glmnet(X = X, Y = Y, train = train, val = val, Y.col = 1,
-            nfolds = 5, ntaus = 10, verbose = TRUE)
-
 escv.glmnet = function(X = X, Y = Y, train = train, val = val, Y.col = 1,
                        nfolds = 5, ntaus = 10, verbose = TRUE)
 {
