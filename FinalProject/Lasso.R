@@ -1,11 +1,8 @@
 library(glmnet)
-library(parallel)
-library(doParallel)
-library(foreach)
+
 
 alpha = 1
-nCores = as.numeric(Sys.getenv('NSLOTS'))
-registerDoParallel(1)
+
 
 ReportGlmnetPerf = function(y, yhat, model, best.model)
 {
@@ -107,7 +104,8 @@ ESCVHelper = function(cv, df.tau, tau, verbose = TRUE)
 }
 
 escv.glmnet = function(X = X, Y = Y, train = train, val = val, Y.col = 1,
-                       nfolds = 5, ntaus = 10, verbose = TRUE)
+                       nfolds = 5, ntaus = 10, verbose = TRUE, 
+                       parallel = FALSE)
 {
   tm = Sys.time()
   fold.len = round(length(train)/nfolds)
@@ -130,12 +128,18 @@ escv.glmnet = function(X = X, Y = Y, train = train, val = val, Y.col = 1,
   }
   tau.matrix = matrix(unlist(tau.matrix), nrow = length(tau.matrix[[1]]))
   list.tau = seq(from = min(tau.matrix), to = max(tau.matrix), 
-                 length.out = ntaus)
-  # es = sapply(list.tau, function(x) ESCVHelper(cv, tau.matrix, x, 
-  #                                             verbose = verbose))
-  es = foreach(i = 1:length(list.tau)) %dopar% {
-    ESCVHelper(cv, tau.matrix, list.tau[i], verbose = verbose)
+                 length.out = ntaus)                                            
+  if (parallel)
+  {
+    es = foreach(i = 1:length(list.tau)) %dopar% {
+      ESCVHelper(cv, tau.matrix, list.tau[i], verbose = verbose)
+    }
+    es = unlist(es)
+  } else {
+    es = sapply(list.tau, function(x) ESCVHelper(cv, tau.matrix, x, 
+                                                 verbose = verbose))
   }
+  
   best.tau = list.tau[which.min(es)]
   
   # Now fit the model with best tau (L1 norm) parameter

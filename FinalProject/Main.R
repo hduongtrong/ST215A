@@ -1,19 +1,25 @@
 library(ggplot2)
-
-working.directory = Sys.getenv("FinalProject")
-setwd(working.directory)
+library(parallel)
+library(doParallel)
+library(foreach)
 
 source("ModelSelectCriterions.R")
 source("Data.R")
 source("Lasso.R")
+
+working.directory = Sys.getenv("FinalProject")
+setwd(working.directory)
+nCores = as.numeric(Sys.getenv('NSLOTS'))
+registerDoParallel(nCores)
+
 # Whether you want to run models or just load the function 
-.main. = TRUE
+.main. = FALSE
 
 ###############################################################################
 ### 1. Functions
 ###############################################################################
 
-RunAllY = function(Model = RunGlmnetIC, ...)
+RunAllY1 = function(Model = RunGlmnetIC, ...)
 {
   # Description: Run a model on all columns of Y and get the performance
   # Args:
@@ -35,11 +41,26 @@ RunAllY = function(Model = RunGlmnetIC, ...)
   df$voxel = 1:ncol(Y)
   df
 }
+RunAllY2 = function(Model = RunGlmnetIC, ...)
+{
+  # Parallel Version of RunAllY1
+  out = foreach (i = 1:ncol(Y)) %dopar%
+  {
+    Model(..., Y.col = i)
+  }
+  out = do.call(rbind, out)
+  out$voxel = 1:ncol(Y)
+}
 
+if (nCores > 1) {
+  RunAllY = RunAllY2
+} else {
+  RunAllY = RunAllY1
+}
 ###############################################################################
 ### 2. Run The Model
 ###############################################################################
-if (.main. == TRUE)
+if (.main.)
 {
   cat("Running Lasso AIC \n")
   dfAIC = RunAllY(Model = RunGlmnetIC, X = X, Y = Y, 
@@ -51,13 +72,11 @@ if (.main. == TRUE)
   dfBIC = RunAllY(Model = RunGlmnetIC, X = X, Y = Y, 
                   train = train, val = val, criterion = GetBIC)
   cat("Running Lasso CV \n")
-  dfCV.se  = RunAllY(Model = RunGlmnetCV, X = X, Y = Y, 
+  dfCV  = RunAllY(Model = RunGlmnetCV, X = X, Y = Y, 
                      train = train, val = val, s = "lambda.1se")
-  dfCV.min = RunAllY(Model = RunGlmnetCV, X = X, Y = Y, 
-                     train = train, val = val, s = "lambda.min")
   cat("Running Lasso ESCV \n")
   dfES = RunAllY(Model = escv.glmnet, X = X, Y = Y, train = train, val = val, 
-                 nfolds = 5, ntaus = 100, verbose = TRUE)
+                 nfolds = 5, ntaus = 100, verbose = TRUE, parallel = FALSE)
   
   dfAIC$MS = 'AIC'; dfAICc$MS = 'AICc'; dfBIC$MS = 'BIC'; dfCV$MS = 'CV'
   dfES$MS = 'ESCV'
