@@ -1,8 +1,11 @@
 library(glmnet)
 library(parallel)
+library(doParallel)
 library(foreach)
 
 alpha = 1
+nCores = as.numeric(Sys.getenv('NSLOTS'))
+registerDoParallel(1)
 
 ReportGlmnetPerf = function(y, yhat, model, best.model)
 {
