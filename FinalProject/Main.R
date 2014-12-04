@@ -2,6 +2,7 @@ library(glmnet)
 library(ggplot2)
 
 working.directory = Sys.getenv("FinalProject")
+alpha = Sys.getenv("alpha")
 setwd(working.directory)
 source("ModelSelectCriterions.R")
 
@@ -11,7 +12,6 @@ source("ModelSelectCriterions.R")
 .main. = TRUE
 if (.main.) .load.data = TRUE
 # If both are set to FALSE, only functions are loaded
-alpha = 0.8
 
 ###############################################################################
 ### 1. Functions
@@ -95,7 +95,8 @@ RunGlmnetIC = function(X = X, Y = Y, train = train, val = val,
   best.model = which(IC == min(IC))[1]
   
   yhat = predict(glmnet.fit, X[val, ], s = glmnet.fit$lambda[best.model])
-  cat("Running Time (s): ", round(Sys.time() - tm, 2), Y.col, "\n")
+  cat("Running Time (s): ", 
+      round(difftime(Sys.time(), tm, units = "secs"), 2), Y.col, "\n")
   ReportGlmnetPerf(y = Y[val, Y.col], yhat = yhat, 
                 model = glmnet.fit, best.model)
 }
@@ -119,7 +120,8 @@ RunGlmnetCV = function(X = X, Y = Y, train = train, val = val,
                       intercept = TRUE, nfolds = 5, alpha = alpha)
   yhat = predict(glmnetcv.fit, X[val, ], s = glmnetcv.fit$lambda.min)
   best.model = which(glmnetcv.fit$lambda == glmnetcv.fit$lambda.min)[1]
-  cat("Running Time (s): ", round(Sys.time() - tm, 2), Y.col, "\n")
+  cat("Running Time (s): ", 
+      round(difftime(Sys.time(), tm, units = "secs"), 2), Y.col, "\n")
   ReportGlmnetPerf(y = Y[val, Y.col], yhat = yhat, model = glmnetcv.fit, 
                 best.model)
 }
@@ -138,6 +140,9 @@ ESCVHelper = function(cv, df.tau, tau, verbose = TRUE)
   var.ytau = sum(GetRSSs(yhat.m, yhat))/ncol(yhat)
   var.ytau/sum(yhat.m^2)
 }
+
+escv.glmnet(X = X, Y = Y, train = train, val = val, Y.col = 1,
+            nfolds = 5, ntaus = 10, verbose = TRUE)
 
 escv.glmnet = function(X = X, Y = Y, train = train, val = val, Y.col = 1,
                        nfolds = 5, ntaus = 10, verbose = TRUE)
@@ -173,10 +178,11 @@ escv.glmnet = function(X = X, Y = Y, train = train, val = val, Y.col = 1,
                  standardize = FALSE, intercept = TRUE, alpha = alpha)
   all.taus = colSums(abs(model$beta))
   best.tau.idx = which.min(abs(all.taus - best.tau))
-  yhat = predict(glmnet.fit, X[val, ], s = model$lambda[best.tau.idx])
-  cat("Running Time (s): ", round(Sys.time() - tm, 2), Y.col, "\n")
+  yhat = predict(model, X[val, ], s = model$lambda[best.tau.idx])
+  cat("Running Time (s): ", 
+      round(difftime(Sys.time(), tm, units = "secs"), 2), Y.col, "\n")
   ReportGlmnetPerf(y = Y[val, Y.col], yhat = yhat, 
-                   model = glmnet.fit, best.model = best.tau.idx)
+                   model = model, best.model = best.tau.idx)
 }
 
 RunAllY = function(Model = RunGlmnetIC, ...)
@@ -242,19 +248,20 @@ if (.main. == TRUE)
   dfAIC$MS = 'AIC'; dfAICc$MS = 'AICc'; dfBIC$MS = 'BIC'; dfCV$MS = 'CV'
   dfES$MS = 'ESCV'
   df = rbind(dfAIC, dfAICc, dfBIC, dfCV, dfES)
-  png("./graphs/Lasso_Cor2.png")
+  png(SafeFileName("./graphs/Lasso_Cor000.png"))
   ggplot(data = df) + geom_line(aes(x = voxel,  y = Cor, color = MS))
   dev.off()
-  png("./graphs/Lasso_MSE2.png")
+  png(SafeFileName("./graphs/Lasso_MSE000.png"))
   ggplot(data = df) + geom_line(aes(x = voxel,  y = MSE, color = MS))
   dev.off()
-  png("./graphs/Lasso_Lambda2.png")
+  png(SafeFileName("./graphs/Lasso_Lambda000.png"))
   ggplot(data = df) + geom_line(aes(x = voxel,  y = Lambda, color = MS)) +
     scale_y_log10()
   dev.off()
-  png("./graphs/Lasso_Df2.png")
+  png(SafeFileName("./graphs/Lasso_Df000.png"))
   ggplot(data = df) + geom_line(aes(x = voxel,  y = DF, color = MS)) +
     scale_y_log10()
+  save(df, file = SafeFileName("./RData//LassoModelSelection000.RData", 5))
 }
 
 # Experiment Code

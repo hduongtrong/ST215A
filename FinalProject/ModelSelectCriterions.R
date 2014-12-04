@@ -16,3 +16,17 @@ SelectModel = function(y, yhats, dfs, criterion)
   n = length(y)
   apply(cbind(RSSs, dfs), 1, function(x) criterion(x[1], n, x[2]))
 }
+
+SafeFileName = function(filename, len.ext)
+{
+  while (file.exists(filename))
+  {
+    n = nchar(filename)
+    name = substr(filename, 1, n - len.ext - 4)
+    id   = as.numeric(substr(filename, n - len.ext - 3, n - len.ext -1)) + 1
+    id   = sprintf("%03d", id)
+    ext  = substr(filename, n - len.ext + 1, n)
+    filename = paste(name, id, ".", ext, sep = "")
+  }
+  filename
+}
