@@ -126,8 +126,11 @@ escv.glmnet = function(X = X, Y = Y, train = train, val = val, Y.col = 1,
   tau.matrix = matrix(unlist(tau.matrix), nrow = length(tau.matrix[[1]]))
   list.tau = seq(from = min(tau.matrix), to = max(tau.matrix), 
                  length.out = ntaus)
-  es = sapply(list.tau, function(x) ESCVHelper(cv, tau.matrix, x, 
-                                               verbose = verbose))
+  # es = sapply(list.tau, function(x) ESCVHelper(cv, tau.matrix, x, 
+  #                                             verbose = verbose))
+  es = foreach(i = 1:length(list.tau)) %dopar% {
+    ESCVHelper(cv, tau.matrix, list.tau[i], verbose = verbose)
+  }
   best.tau = list.tau[which.min(es)]
   
   # Now fit the model with best tau (L1 norm) parameter
