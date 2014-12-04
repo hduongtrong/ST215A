@@ -3,13 +3,14 @@ library(ggplot2)
 
 working.directory = Sys.getenv("FinalProject")
 alpha = Sys.getenv("alpha")
+alpha = 1
 setwd(working.directory)
 source("ModelSelectCriterions.R")
 
 # Whether you want to load data or not
 .load.data. = TRUE
 # Whether you want to run models or not. Setting TRUE will also load data.
-.main. = TRUE
+.main. = FALSE
 if (.main.) .load.data = TRUE
 # If both are set to FALSE, only functions are loaded
 
@@ -102,7 +103,7 @@ RunGlmnetIC = function(X = X, Y = Y, train = train, val = val,
 }
 
 RunGlmnetCV = function(X = X, Y = Y, train = train, val = val,
-                       Y.col = 1)
+                       Y.col = 1, s = "lambda.min")
 {
   # Description: Run the cv.glmnet model for one column of Y, then report
   #              performance on validation set.
@@ -118,8 +119,9 @@ RunGlmnetCV = function(X = X, Y = Y, train = train, val = val,
   glmnetcv.fit = cv.glmnet(X[train, ], Y[train, Y.col], 
                       family = "gaussian", standardize = FALSE, 
                       intercept = TRUE, nfolds = 5, alpha = alpha)
-  yhat = predict(glmnetcv.fit, X[val, ], s = glmnetcv.fit$lambda.min)
-  best.model = which(glmnetcv.fit$lambda == glmnetcv.fit$lambda.min)[1]
+  best.lambda = glmnetcv.fit[[s]]
+  yhat = predict(glmnetcv.fit, X[val, ], s = best.lambda)
+  best.model = which(glmnetcv.fit$lambda == best.lambda)[1]
   cat("Running Time (s): ", 
       round(difftime(Sys.time(), tm, units = "secs"), 2), Y.col, "\n")
   ReportGlmnetPerf(y = Y[val, Y.col], yhat = yhat, model = glmnetcv.fit, 
@@ -221,6 +223,10 @@ if (.load.data. == TRUE)
   X = CleanData(X, train)
 }
 
+dfCV.min = RunAllY(Model = RunGlmnetCV, X = X, Y = Y, 
+               train = train, val = val, s = "lambda.min")
+dfCV.se  = RunAllY(Model = RunGlmnetCV, X = X, Y = Y, 
+                   train = train, val = val, s = "lambda.min")
 ###############################################################################
 ### 3. Run The Model
 ###############################################################################
