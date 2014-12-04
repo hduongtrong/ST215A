@@ -1,8 +1,5 @@
 library(glmnet)
-
-
-alpha = 1
-
+alpha = Sys.getenv("alpha")
 
 ReportGlmnetPerf = function(y, yhat, model, best.model)
 {
