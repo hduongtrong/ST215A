@@ -1,4 +1,6 @@
 library(glmnet)
+library(parallel)
+library(foreach)
 
 alpha = 1
 
