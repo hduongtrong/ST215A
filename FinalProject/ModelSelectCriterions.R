@@ -30,3 +30,26 @@ SafeFileName = function(filename, len.ext)
   }
   filename
 }
+ReportPerf = function(y, yhat)
+{
+  # Description: Report the performance of a glmnet or cv.glmnet model
+  # Args:
+  #   y         : the true output
+  #   yhat      : the prediced output
+  #   model     : the glmnet fitted model, to extract the degree of freedom and 
+  #               lambda parameter
+  #   best.model: index of the chosen model (out of many lambdas)
+  # Return: 
+  #   A vector of correlation, slope, R-squared, MSE, lambda, and degree of 
+  #   freedom for the selected (best) model
+  
+  # In cv.glmnet, degree of freedom is reported as nzero
+  res = c(cor(        y, yhat), 
+          GetSlope(   y, yhat),
+          GetRsquared(y, yhat),
+          GetMSE(     y, yhat))
+  res = matrix(res, 1, length(res))
+  col.names = c('Cor', 'Slope', 'R-Square', 'MSE')
+  colnames(res) = col.names
+  res
+}

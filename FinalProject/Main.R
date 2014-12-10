@@ -3,12 +3,14 @@ library(parallel)
 library(doParallel)
 library(foreach)
 
+working.directory = Sys.getenv("FinalProject")
+setwd(working.directory)
+
 source("ModelSelectCriterions.R")
 source("Data.R")
 source("Lasso.R")
 
-working.directory = Sys.getenv("FinalProject")
-setwd(working.directory)
+
 nCores = as.numeric(Sys.getenv('NSLOTS'))
 registerDoParallel(nCores)
 
@@ -57,6 +59,37 @@ if (nCores > 1) {
 } else {
   RunAllY = RunAllY1
 }
+
+VarSelectCor = function(X, y, pct = 0.10)
+{
+  list.cor = abs(apply(X, 2, function(x) cor(x, y)))
+  cutoff = quantile(list.cor, 1 - pct)
+  which(list.cor > cutoff)
+}
+
+VarSelectRanForest = function(X, y, pct = 0.10)
+{
+  model = randomForest(x = X, y = y, 
+                       ntree = 300, mtry = 500, importance = TRUE)
+  imp = model$importance
+  cutoff = quantile(imp, 1 - pct)
+  which(imp > cutoff)
+}
+
+VarSelectLasso = function(X, y, pct = 0.10)
+{
+  model = glmnet(X, y, 
+                 family = "gaussian", standardize = FALSE, 
+                 intercept = TRUE, alpha = alpha)
+  b = coef(model)
+  a = apply(b, 2, function(x) sum(x != 0))
+  n.nonzero = round(ncol(X)*pct)
+  matched.idx.sorted = findInterval(x = n.nonzero, vec = sort(a))
+  matched.value  = sort(a)[matched.idx.sorted]
+  matched.idx    = which(a == matched.value)
+  res = b[2:nrow(b), matched.idx]
+  which(res != 0)
+}
 ###############################################################################
 ### 2. Run The Model
 ###############################################################################
@@ -81,33 +114,21 @@ if (.main.)
   dfAIC$MS = 'AIC'; dfAICc$MS = 'AICc'; dfBIC$MS = 'BIC'; dfCV$MS = 'CV'
   dfES$MS = 'ESCV'
   df = rbind(dfAIC, dfAICc, dfBIC, dfCV, dfES)
-  png(SafeFileName("./graphs/Lasso_Cor000.png"))
+  png("./graphs/Lasso_Cor%03d.png")
   ggplot(data = df) + geom_line(aes(x = voxel,  y = Cor, color = MS))
   dev.off()
-  png(SafeFileName("./graphs/Lasso_MSE000.png"))
+  png("./graphs/Lasso_MSE%03d.png")
   ggplot(data = df) + geom_line(aes(x = voxel,  y = MSE, color = MS))
   dev.off()
-  png(SafeFileName("./graphs/Lasso_Lambda000.png"))
+  png("./graphs/Lasso_Lambda%03d.png")
   ggplot(data = df) + geom_line(aes(x = voxel,  y = Lambda, color = MS)) +
     scale_y_log10()
   dev.off()
-  png(SafeFileName("./graphs/Lasso_Df000.png"))
+  png("./graphs/Lasso_Df%03d.png")
   ggplot(data = df) + geom_line(aes(x = voxel,  y = DF, color = MS)) +
     scale_y_log10()
-  save(df, file = SafeFileName("./RData//LassoModelSelection000.RData", 5))
+  save(df, file = SafeFileName("./RData/LassoModelSelection000.RData", 5))
 }
 
-# Experiment Code
-if (FALSE)
-{
-  lbda = sort(0.001*2^(seq(from = 0, to = 10, by = 0.1)), decreasing = TRUE)
-  glmnet.fit = glmnet(X[train, ], Y[train, 1], 
-                      family = "gaussian", standardize = FALSE, 
-                      intercept = TRUE)
-  plot(glmnet.fit, xvar = "lambda")
-  a = glmnet.fit$beta
-  
-  plot(log10(1+colSums(abs(a))))
-  df1 = melt(es, id = 'id', variable_name = 'series')
-  ggplot(df1, aes(id, value)) + geom_line(aes(colour = series))
-}
+
+

@@ -1,5 +1,6 @@
 library(glmnet)
 alpha = Sys.getenv("alpha")
+alpha = 1
 
 ReportGlmnetPerf = function(y, yhat, model, best.model)
 {
@@ -50,7 +51,7 @@ RunGlmnetIC = function(X = X, Y = Y, train = train, val = val,
                       intercept = TRUE, alpha = alpha)
   yhats = predict(glmnet.fit, X[train, ])
   IC = SelectModel(Y[train, Y.col], yhats, glmnet.fit$df, criterion)
-  best.model = which(IC == min(IC))[1]
+  best.model = which.min(IC)
   
   yhat = predict(glmnet.fit, X[val, ], s = glmnet.fit$lambda[best.model])
   cat("Running Time (s): ", 
@@ -92,7 +93,8 @@ ESCVHelper = function(cv, df.tau, tau, verbose = TRUE)
   yhat = list()
   for (i in 1:5)
   {
-    yhat[[i]] = predict(cv[[i]], X[train, ], s = cv[[i]]$lambda[idx[i]])
+    yhat[[i]] = predict(cv[[i]], X[train, ], s = cv[[i]]$lambda[idx[i]], 
+                        exact = FALSE)
   }
   yhat = matrix(unlist(yhat), nrow = length(yhat[[1]]))
   yhat.m = rowMeans(yhat)
